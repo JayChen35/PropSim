@@ -3,7 +3,7 @@
 
 
 import numpy as np 
-from classes import Gas, Inputs
+from classes import Gas, Inputs, Pressurant
 from helpers import isen_exp
 
 
@@ -21,7 +21,7 @@ nitrogen = Gas()
 nitrogen.c_v = 0.743e3 # J/kg*K
 nitrogen.molecular_mass = 2*14.0067e-3 # kg/mol
 
-
+inputs = Inputs()
 #-------Injector Properties----------
 # Injector Exit Area
 inputs.ox.injector_area = 2.571e-05 # m^2
@@ -57,10 +57,10 @@ inputs.ox.d_flowline = .5*in_to_m
 #Tank Temperature (K)
 inputs.ox.T_tank = 292
 
-# #-------Oxidizer Pressurant Properties--------
+#-------Oxidizer Pressurant Properties--------
 
 # inputs.ox_pressurant = Pressurant('oxidizer')
-# inputs.ox_pressurant.gas_properties = helium
+# inputs.ox_pressurant.gas_properties = nitrogen
 # inputs.ox_pressurant.set_pressure = 750*psi_to_Pa
 # inputs.ox_pressurant.storage_initial_pressure = 4500*psi_to_Pa
 # inputs.ox_pressurant.tank_volume = 3.5*L_to_m3
@@ -83,7 +83,7 @@ inputs.fuel.h_offset_tank = 24*in_to_m # 24*in_to_m
 #Main Flow Line Diameter(in)
 inputs.fuel.d_flowline = .5*in_to_m
 
-inputs.fuel.rho = 789 #Kg/m^3
+inputs.fuel.rho = 789 # Kg/m^3
 
 #-------Fuel Pressurant Properties--------
 
@@ -120,8 +120,8 @@ inputs.T_amb = 292 # K
 inputs.p_amb = 9.554e04 # Pa
 
 # Load Combustion Data
-inputs.comb_data = load(inputs.CombustionData) 
-inputs.comb_data = inputs.comb_data.CombData
+# inputs.comb_data = load(inputs.CombustionData) 
+# inputs.comb_data = inputs.comb_data.CombData
 
 # Run Performance Code
 PerformanceCode(inputs, mode, test_data)

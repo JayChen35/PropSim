@@ -1,13 +1,15 @@
-# Prop Sim Classes
-# Project Caelus 2/4/2021
+# PropSim Classes
+# Project Caelus, Aphlex 1C Engine
+# 04 February, 2021
 
 
 class Inputs():
     """
-    Stores inputs for propsim
+    Stores inputs for PropSim
     """
-
     def __init__(self):
+        super().__init__()
+
         self.ox = None
         self.ox_pressurant = None
         
@@ -31,9 +33,13 @@ class Inputs():
         self.p_amb = None
         
         self.comb_data = None
+
+        self.ox = Struct()
+        self.fuel = Struct()
+        self.ox_pressurant = Pressurant()
+        self.fuel_pressurant = Pressurant()
         
-        
-        #ox: injector_area, Cd_injector , V_l, V_tank, tank_id, h_offset_tank, d_flowline, T_tank
+        # ox: injector_area, Cd_injector , V_l, V_tank, tank_id, h_offset_tank, d_flowline, T_tank
         # fuel: injector_area, Cd_injector, h_offset_tank, d_flowline, rho
         # dt_valve_open
         # mass_dry_rocket
@@ -42,25 +48,30 @@ class Inputs():
         
         # ox_pressurant: gas_properties, set_pressure, storage_initial_pressure, tank_volume, flow_CdA
         # fuel_pressurant: gas_properties, set_pressure, storage_initial_pressure, tank_volume, flow_CdA
-        
+
+class Struct():
+    """
+    Generic storage of variables class.
+    """
+    def __init__(self):
+        super().__init__()
 
 class Gas():
     """
     Stores common information about gasses
     """ 
-    
     def __init__(self):
+        super().__init__()
         self.c_v = None
         self.molecular_mass = None
         
 class Pressurant():
     """
     PRESSURANT Represents a propellant pressurant mechanism
-    Represents an instance of a propellant under pressurization by a
-    gas.
+    Represents an instance of a propellant under pressurization by a gas.
     """
-    
-    def __init__(propellant_type = None):
+    def __init__(self, propellant_type = None):
+        super().__init__()
         # Whether pressurant is to be simulated
         self.gas_properties = None
         self.set_pressure = None
@@ -70,4 +81,4 @@ class Pressurant():
         if propellant_type == 'fuel' or propellant_type == 'oxidizer':
             self.propellant_type = propellant_type
         else:
-            raise Exception("Invalid Propellant Type")
+            raise Exception("Invalid propellant type.")

@@ -1,12 +1,12 @@
-## Run Performance Code
+%% Run Performance Code
 
 addpath(fullfile(pwd, 'Supporting Functions'))
 
 clear
 close all
 
-# Unit Conversion
-psi_to_Pa = 6894.75729; # 1 psi in Pa
+%% Unit Conversion
+psi_to_Pa = 6894.75729; % 1 psi in Pa
 in_to_m = 0.0254; % 1 in in m
 mm_to_m = 1e-3; % 1 mm in m
 lbf_to_N = 4.44822162; % 1 lbf in N
