@@ -1,4 +1,4 @@
-function [ V_q ] = FastInterp1(X, V, X_q)
+temfunction [ V_q ] = FastInterp1(X, V, X_q)
 %FastInterp1 Wrapper for fast use of interp1, working for equally-spaced
 %grids.
 

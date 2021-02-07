@@ -3,6 +3,8 @@
 
 
 import numpy as np 
+import time
+from typing import Tuple
 from classes import Gas, Inputs, Pressurant, Struct
 from helpers import n2o_properties
 
@@ -137,4 +139,53 @@ if __name__=="___main__":
 
 
 def PerformanceCode(inputs: Inputs, options: Struct):
+    """
+    Runs integration.py to integrate the state vector and records output
+    """
+    # Constants
+    R_u = 8.3144621 # universal gas constant [J/mol*K]
+    g_0 = 9.80665 # standard gravitational constant [m/s^2]
+    # Unit Conversion
+    psi_to_Pa = 6894.75729 # 1 psi in Pa
+    in_to_m = 0.0254 # 1 in in m
+    lbf_to_N = 4.44822162 # 1 lbf in N
+    atm_to_Pa = 101325 # 1 atm in Pa
+
     n2o = n2o_properties(inputs.T_amb)
+    # Our integration variables are oxidizer mass and liquid oxidizer volume
+    Mox = n2o.rho_l*(inputs.ox.V_l) + n2o.rho_g*(inputs.ox.V_tank - inputs.ox.V_l)
+    if options.output_on:
+        print("Initial oxidizer mass: {} kg.".format(Mox))
+
+    start = time.perf_counter()
+
+    time, record = integration(inputs, options) # time is the time for integration
+    
+    F_thrust = record.F_thrust
+    p_cc = record.p_cc
+    p_oxtank = record.p_oxtank
+    p_oxpresstank = record.p_oxpresstank
+    p_fueltank = record.p_fueltank
+    p_fuelpresstank = record.p_fuelpresstank
+    p_oxmanifold = record.p_oxmanifold
+    T_oxtank = record.T_oxtank
+    T_cc = record.T_cc
+    area_core = record.area_core
+    OF = record.OF_i
+    gamma_ex = record.gamma_ex
+    m_dot_ox = record.m_dot_ox
+    m_dot_fuel = record.m_dot_fuel
+    p_crit = record.p_crit
+    m_dot_ox_crit = record.m_dot_ox_crit
+    M_e = record.M_e
+    p_exit = record.p_exit
+    p_shock = record.p_shock
+
+    time_elapsed = start - time.perf_counter()
+    if options.output_on:
+        print("Time elapsed for this timestep: {} sec.".format(time_elapsed))
+
+def integration(inputs: Inputs, options: Struct) -> Tuple[float, Struct]:
+    record = Struct() # Recording the output data for this timestep
+    
+    pass
