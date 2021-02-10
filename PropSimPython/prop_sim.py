@@ -1,5 +1,6 @@
-# Prop Sim in Python 3.8
-# Project Caelus 2/4/2021
+# PropSim in Python 3.8
+# Project Caelus, Aphlex 1C Engine
+# 09 February, 2021
 
 
 import numpy as np 
@@ -135,10 +136,10 @@ inputs.p_amb = 9.554e04 # Pa
 
 
 if __name__=="___main__":
-    PerformanceCode(inputs, options)
+    performance_code(inputs, options)
 
 
-def PerformanceCode(inputs: Inputs, options: Struct):
+def performance_code(inputs: Inputs, options: Struct):
     """
     Runs integration.py to integrate the state vector and records output
     """
@@ -151,7 +152,7 @@ def PerformanceCode(inputs: Inputs, options: Struct):
     lbf_to_N = 4.44822162 # 1 lbf in N
     atm_to_Pa = 101325 # 1 atm in Pa
 
-    n2o = n2o_properties(inputs.T_amb)
+    n2o = n2o_properties(inputs.ox.T_tank)
     # Our integration variables are oxidizer mass and liquid oxidizer volume
     Mox = n2o.rho_l*(inputs.ox.V_l) + n2o.rho_g*(inputs.ox.V_tank - inputs.ox.V_l)
     if options.output_on:
@@ -187,5 +188,5 @@ def PerformanceCode(inputs: Inputs, options: Struct):
 
 def integration(inputs: Inputs, options: Struct) -> Tuple[float, Struct]:
     record = Struct() # Recording the output data for this timestep
-    
+    state_0, x0 = InitializeLiquidState(inputs, mode);
     pass

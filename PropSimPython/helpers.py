@@ -7,7 +7,12 @@ import numpy as np
 from classes import Struct
 
 
-def n2o_properties(temp) -> Struct:
+def n2o_properties(temp: int or float) -> Struct:
+    """
+    Calculates properties of nitrous oxide given a temperature in K
+    WARNING: if temperature input is outside of -90 to 30 C, properties will
+    be generated for boundary (-90 C or 30 C)
+    """
     properties = Struct()
     properties.Pvap       = None
     properties.rho_l      = None
@@ -23,29 +28,7 @@ def n2o_properties(temp) -> Struct:
     properties.s_g        = None
     properties.mu_l       = None
     properties.mu_g       = None
-
-    # class Properties():
-    #     self.Pvap       = None
-    #     self.rho_l      = None
-    #     self.rho_g      = None
-    #     self.deltaH_vap = None
-    #     self.cp_l       = None
-    #     self.cv_l       = None
-    #     self.cp_g       = None
-    #     self.cv_g       = None
-    #     self.h_l        = None
-    #     self.h_g        = None
-    #     self.s_l        = None
-    #     self.s_g        = None
-    #     self.mu_l       = None
-    #     self.mu_g       = None
-
         
-    # N2O_Properties(T)
-    # Calculates properties of nitrous 
-    # oxide given a temperature in K
-    # WARNING: if temperature input is outside of -90 to 30 C, properties will
-    # be generated for boundary (-90 C or 30 C)
 
     # Returns properties (structure)
     # properties.Pvap in Pa
@@ -64,14 +47,16 @@ def n2o_properties(temp) -> Struct:
     # properties.mu_g in N*s/(m^2)
 
 
-    NIST_DATA = Struct() # NIST_data is an array that stores variables starting in line 129
+    NIST_DATA = Struct() # NIST_data is an array that stores variables regarding nitrous
     R_u = 8.3144621 # Universal gas constant [J/mol*K]
     M_n2o = 0.044013 # Molecular mass of nitrous oxide [kg/mol]
     R_n2o_0 = R_u/M_n2o # Specific gas constant of nitrous oxide [J/kg*K]
 
     # Range-check temperature
-    T(temp < (-90 + 273.15)) = -90 + 273.150001 # come back to this and see what it does
-    T(temp > (30 + 273.15)) = 30 + 273.150001
+    if temp < (-90 + 273.15):
+        temp = -90 + 273.150001
+    elif temp > (30 + 273.150001):
+        temp = 30 + 273.150001
 
     Tcrit = 309.57 #K
     Pcrit = 7251   #kPa

@@ -44,7 +44,7 @@ nitrogen.molecular_mass = 2*14.0067e-3; % kg/mol
 
 %-------Injector Properties----------
 
-%Injector Exit Area%Injector Exit Area
+%Injector Exit Area
 initial_inputs.ox.injector_area = 2.571e-05; % 31.2*mm_to_m^2;
 initial_inputs.fuel.injector_area = 6.545e-06; % 2.31*mm_to_m^2;
 

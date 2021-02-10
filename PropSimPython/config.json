@@ -1,0 +1,33 @@
+{
+    "dt_valve_open": 0.01,
+    "mass_dry_rocket": 30,
+
+    "default_units": {
+        "length": "m",
+        "area": "m^2",
+        "volume": "L"
+    },
+    "unit_conv": {
+        "psi_to_Pa": 6894.75729,
+        "in_to_m": 0.0254,
+        "mm_to_m": 1e-3,
+        "lbf_to_N": 4.44822162,
+        "lbm_to_kg": 0.453592,
+        "atm_to_Pa": 101325,
+        "L_to_m3": 1e-3
+    },
+    "options": {
+        "t_final": 60,
+        "dt": 0.01,
+        "output_on": 1
+    },
+    "ox": {
+        
+        "injector_area": 2.571e-05
+    },
+    "fuel": {
+        
+        "injector_area": 6.545e-06
+    }
+    
+}
