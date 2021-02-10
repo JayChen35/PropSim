@@ -69,8 +69,7 @@ def n2o_properties(temp: int or float) -> dict:
     b3 = -1.3779
     b4 = -4.051
 
-    #properties["Pvap"] = exp((1./Tr).*(b1*(1-Tr) + b2*(1-Tr).^(3/2) + b3*(1-Tr).^(5/2) + b4*(1-Tr).^5))*Pcrit
-    properties["Pvap"] = exp((1/Tr)*(b1*(1-Tr) + b2*(1-Tr)**(3/2) + b3*(1-Tr)**(5/2) + b4*(1-Tr)**5))*Pcrit
+    properties["Pvap"] = np.exp((1/Tr)*(b1*(1-Tr) + b2*(1-Tr)**(3/2) + b3*(1-Tr)**(5/2) + b4*(1-Tr)**5))*Pcrit
     properties["Pvap"] = properties["Pvap"]*1000
 
     # Calculate Density of Liquid, valid -90C to 36C
@@ -79,8 +78,7 @@ def n2o_properties(temp: int or float) -> dict:
     b3 = 0.51060
     b4 = -0.10412
 
-    #properties["rho_l"] = exp(b1*(1-Tr).^(1/3) + b2*(1-Tr).^(2/3) + b3*(1-Tr) + b4*(1-Tr).^(4/3))*rhocrit
-    properties["rho_l"] = exp(b1*(1-Tr)**(1/3) + b2*(1-Tr)**(2/3) + b3*(1-Tr) + b4*(1-Tr)**(4/3))*rhocrit
+    properties["rho_l"] = np.exp(b1*(1-Tr)**(1/3) + b2*(1-Tr)**(2/3) + b3*(1-Tr) + b4*(1-Tr)**(4/3))*rhocrit
 
 
     # Calculate Density of Gas, valid -90C to 36C
@@ -91,17 +89,16 @@ def n2o_properties(temp: int or float) -> dict:
     b5 = 0.629427
     Trinv = 1./Tr
 
-    #properties["rho_g"] = exp(b1*(Trinv-1).^(1/3) + b2*(Trinv-1).^(2/3) + b3*(Trinv-1) + b4*(Trinv-1).^(4/3) + b5*(Trinv-1).^(5/3))*rhocrit
-    properties["rho_g"] = exp(b1*(Trinv-1)**(1/3) + b2*(Trinv-1)**(2/3) + b3*(Trinv-1) + b4*(Trinv-1)**(4/3) + b5*(Trinv-1)**(5/3))*rhocrit
+    properties["rho_g"] = np.exp(b1*(Trinv-1)**(1/3) + b2*(Trinv-1)**(2/3) + b3*(Trinv-1) + b4*(Trinv-1)**(4/3) + b5*(Trinv-1)**(5/3))*rhocrit
 
     # Calculate dynamic viscosity of saturated liquid, valid from -90C to 30C
     b1 = 1.6089
     b2 = 2.0439
     b3 = 5.24
     b4 = 0.0293423
-    theta = (Tcrit-b3)./(temp-b3)
+    theta = (Tcrit-b3)/(temp-b3)
 
-    properties["mu_l"] = b4*exp(b1*(theta-1).^(1/3) + b2*(theta-1).^(4/3))
+    properties["mu_l"] = b4*np.exp(b1*(theta-1)**(1/3) + b2*(theta-1)**(4/3))
 
     # Calculate dynamic viscosity of saturated vapor, valid from -90C to 30C
     b1 = 3.3281
@@ -109,9 +106,9 @@ def n2o_properties(temp: int or float) -> dict:
     b3 = -0.055155
     Trinv = 1./Tr
 
-    properties["mu_g"] = exp(b1 + b2*(Trinv-1).^(1/3) + b3*(Trinv-1).^(4/3))
+    properties["mu_g"] = np.exp(b1 + b2*(Trinv-1)**(1/3) + b3*(Trinv-1)**(4/3))
 
-    # Find Specific Enthalpy
+    # TODO: Find Specific Enthalpy?
 
     
     reader = open("N2O_Properties.cgi.txt", 'r')
@@ -125,54 +122,53 @@ def n2o_properties(temp: int or float) -> dict:
     
     reader.close()
 
-    #     if isempty(NIST_data):
-    #     data = tdfread('N2O_Properties.cgi.txt')
-    #     NIST_data["T"] = data.Temperature_0x28K0x29
-    #     NIST_data["h_liq"] = data.Enthalpy_0x28l0x2C_kJ0x2Fkg0x29 
-    #     NIST_data["h_gas"] = data.Enthalpy_0x28v0x2C_kJ0x2Fkg0x29
-    #     NIST_data["e_liq"] = data.Internal_Energy_0x28l0x2C_kJ0x2Fkg0x29
-    #     NIST_data["e_gas"] = data.Internal_Energy_0x28v0x2C_kJ0x2Fkg0x29
-    #     NIST_data["cv_l"] = data.Cv_0x28l0x2C_J0x2Fg0x2AK0x29 # Cv for liquid
-    #     NIST_data["cv_g"] = data.Cv_0x28v0x2C_J0x2Fg0x2AK0x29 # Cv for gas
-    #     NIST_data["cp_l"] = data.Cp_0x28l0x2C_J0x2Fg0x2AK0x29 # Cp for liquid
-    #     NIST_data["cp_g"] = data.Cp_0x28v0x2C_J0x2Fg0x2AK0x29 # Cp for gas
-    #     NIST_data["s_l"] = data.Entropy_0x28l0x2C_J0x2Fg0x2AK0x29
-    #     NIST_data["s_g"] = data.Entropy_0x28v0x2C_J0x2Fg0x2AK0x29
+    # if isempty(NIST_data):
+    # data = tdfread('N2O_Properties.cgi.txt')
+    # NIST_data["T"] = data.Temperature_0x28K0x29
+    # NIST_data["h_liq"] = data.Enthalpy_0x28l0x2C_kJ0x2Fkg0x29 
+    # NIST_data["h_gas"] = data.Enthalpy_0x28v0x2C_kJ0x2Fkg0x29
+    # NIST_data["e_liq"] = data.Internal_Energy_0x28l0x2C_kJ0x2Fkg0x29
+    # NIST_data["e_gas"] = data.Internal_Energy_0x28v0x2C_kJ0x2Fkg0x29
+    # NIST_data["cv_l"] = data.Cv_0x28l0x2C_J0x2Fg0x2AK0x29 # Cv for liquid
+    # NIST_data["cv_g"] = data.Cv_0x28v0x2C_J0x2Fg0x2AK0x29 # Cv for gas
+    # NIST_data["cp_l"] = data.Cp_0x28l0x2C_J0x2Fg0x2AK0x29 # Cp for liquid
+    # NIST_data["cp_g"] = data.Cp_0x28v0x2C_J0x2Fg0x2AK0x29 # Cp for gas
+    # NIST_data["s_l"] = data.Entropy_0x28l0x2C_J0x2Fg0x2AK0x29
+    # NIST_data["s_g"] = data.Entropy_0x28v0x2C_J0x2Fg0x2AK0x29
 
-    T = None
-    h_liq = None
-    h_gas = None
-    e_liq = None
-    e_gas = None
-    cv_l = None
-    cv_g = None
-    cp_l = None 
-    cp_g = None
-    s_l = None 
-    s_g = None 
+    # T = None
+    # h_liq = None
+    # h_gas = None
+    # e_liq = None
+    # e_gas = None
+    # cv_l = None
+    # cv_g = None
+    # cp_l = None 
+    # cp_g = None
+    # s_l = None 
+    # s_g = None 
 
     # Gas Specific Enthalpy
-    properties["h_l"] = Fast_Interp_1(NIST_data["T"], NIST_data.h_liq, temp)*1000 # J/kg, 
-    properties["h_g"] = Fast_Interp_1(NIST_data["T"], NIST_data.h_gas, temp)*1000 # J/kg
-    properties["e_l"] = Fast_Interp_1(NIST_data["T"], NIST_data.e_liq, temp)*1000 # J/kg
-    properties["e_g"] = Fast_Interp_1(NIST_data["T"], NIST_data.e_gas, temp)*1000 # J/kg
+    properties["h_l"] = fast_interp_1(NIST_data["T"], NIST_data.h_liq, temp)*1000 # J/kg, 
+    properties["h_g"] = fast_interp_1(NIST_data["T"], NIST_data.h_gas, temp)*1000 # J/kg
+    properties["e_l"] = fast_interp_1(NIST_data["T"], NIST_data.e_liq, temp)*1000 # J/kg
+    properties["e_g"] = fast_interp_1(NIST_data["T"], NIST_data.e_gas, temp)*1000 # J/kg
     properties["deltaH_vap"] = properties["h_g"]-properties["h_l"]
     properties["deltaE_vap"] = properties["e_g"]-properties["e_l"]
 
     # Specific Heat at Constant Volume
-    properties["cv_l"] = Fast_Interp_1(NIST_data["T"], NIST_data["cv_l"], temp)*1000
-    properties["cv_g"] = Fast_Interp_1(NIST_data["T"], NIST_data["cv_g"], temp)*1000
+    properties["cv_l"] = fast_interp_1(NIST_data["T"], NIST_data["cv_l"], temp)*1000
+    properties["cv_g"] = fast_interp_1(NIST_data["T"], NIST_data["cv_g"], temp)*1000
 
     # Specific Heat at Constant Pressure
-    properties["cp_l"] = Fast_Interp_1(NIST_data["T"], NIST_data["cp_l"], temp)*1000
-    properties["cp_g"] = Fast_Interp_1(NIST_data["T"], NIST_data["cp_g"], temp)*1000
+    properties["cp_l"] = fast_interp_1(NIST_data["T"], NIST_data["cp_l"], temp)*1000
+    properties["cp_g"] = fast_interp_1(NIST_data["T"], NIST_data["cp_g"], temp)*1000
 
-    #Specific Entropy
+    # Specific Entropy
+    properties["s_l"] = fast_interp_1(NIST_data["T"], NIST_data["s_l"], temp)*1000
+    properties["s_g"] = fast_interp_1(NIST_data["T"], NIST_data["s_g"], temp)*1000
 
-    properties["s_l"] = Fast_Interp_1(NIST_data["T"], NIST_data["s_l"], temp)*1000
-    properties["s_g"] = Fast_Interp_1(NIST_data["T"], NIST_data["s_g"], temp)*1000
-
-    ## Convert Properties to Standard Units
+    # Convert Properties to Standard Units
     properties["mu_l"] = properties["mu_l"]*10^-3 # mN*s/(m^2) -> N*s/m^2
     properties["mu_g"] = properties["mu_g"]*10^-6 # uN*s/(m^2) -> N*s/m^2
 
