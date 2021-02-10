@@ -1,6 +1,7 @@
 # PropSim in Python 3.8
 # Project Caelus, Aphlex 1C Engine
 # 09 February, 2021
+# Authors: Jason Chen, Liam West, Anya Mischel, Jack Blair
 
 import numpy as np
 import time
@@ -9,6 +10,7 @@ from typing import Tuple
 from helpers.n2o import n2o_properties, n2o_find_T
 from helpers.state_flow import liquid_state_vec
 from helpers.wrappers import fast_interp_1, fast_interp_2, fast_interp_3
+from main_functs import integration, find_G, find_mass_gradient
 
 
 #----------Unit Conversions-------------
@@ -21,6 +23,12 @@ atm_to_Pa = 101325 # 1 atm in Pa
 L_to_m3 = 1e-3 # 1 L in m^3
 
 inputs = {
+    #-------------Constants-------------
+    "constants": {
+        "R_u": 8.3144621, # Universal gas constant [J/mol*K]
+        "g_0": 9.80665 # Standard gravitational constant [m/s^2]
+    },
+
     #---------Unit Conversions----------
     "unit_conv": {
         "psi_to_Pa": 6894.75729,
@@ -122,9 +130,45 @@ inputs = {
 }
 
 
+def run_performance():
+    """
+    Runs integration.py to integrate the state vector and records output
+    """
+    # Get oxidizer properties at the given temperature
+    n2o = n2o_properties(inputs["ox"]["T_tank"])
+    # Our integration variables are oxidizer mass and liquid oxidizer volume
+    Mox = n2o["rho_l"]*(inputs["ox"]["liquid_V"]) + n2o["rho_g"]*(inputs["ox"]["tank_V"]-inputs["ox"]["liquid_V"])
+    if inputs["options"]["output_on"]:
+        print("Initial oxidizer mass: {} kg.".format(Mox))
+    start = time.perf_counter() # Start timer for integration
+
+    time, record = integration(inputs) # Time = time for integration, record = output data
+    F_thrust        = record.F_thrust
+    p_cc            = record.p_cc
+    p_oxtank        = record.p_oxtank
+    p_oxpresstank   = record.p_oxpresstank
+    p_fueltank      = record.p_fueltank
+    p_fuelpresstank = record.p_fuelpresstank
+    p_oxmanifold    = record.p_oxmanifold
+    T_oxtank        = record.T_oxtank
+    T_cc            = record.T_cc
+    area_core       = record.area_core
+    OF              = record.OF_i
+    gamma_ex        = record.gamma_ex
+    m_dot_ox        = record.m_dot_ox
+    m_dot_fuel      = record.m_dot_fuel
+    p_crit          = record.p_crit
+    m_dot_ox_crit   = record.m_dot_ox_crit
+    M_e             = record.M_e
+    p_exit          = record.p_exit
+    p_shock         = record.p_shock
+
+    time_elapsed = start-time.perf_counter()
+    if inputs["options"]["output_on"]:
+        print("Time elapsed for this timestep: {} sec.".format(time_elapsed))
+
+
+
+
 if __name__ == "__main__":
-    performance()
-
-
-def performance():
-    pass
+    run_performance()
