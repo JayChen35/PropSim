@@ -98,8 +98,8 @@ inputs.ox.T_tank = 292;
 inputs.ox_pressurant = Pressurant('oxidizer');
 inputs.ox_pressurant.gas_properties = helium;
 inputs.ox_pressurant.set_pressure = 750*psi_to_Pa;
-inputs.ox_pressurant.storage_initial_pressure = 4500*psi_to_Pa;
-inputs.ox_pressurant.tank_volume = 3.5*L_to_m3;
+inputs.ox_pressurant.storage_initial_pressure = 0*psi_to_Pa;
+inputs.ox_pressurant.tank_volume = 0*L_to_m3;
 inputs.ox_pressurant.flow_CdA = 8*mm_to_m^2;
 
 %Are You Supercharging? (0 for 'NO' 1 for 'YES')
@@ -128,8 +128,8 @@ inputs.fuel.rho = 789; %Kg/m^3
 
 inputs.fuel_pressurant = Pressurant('fuel');
 inputs.fuel_pressurant.gas_properties = nitrogen;
-inputs.fuel_pressurant.set_pressure = 326*psi_to_Pa; % 326 psi
-inputs.fuel_pressurant.storage_initial_pressure = 4500*psi_to_Pa;
+inputs.fuel_pressurant.set_pressure = 750*psi_to_Pa; % 326 psi
+inputs.fuel_pressurant.storage_initial_pressure = 0*psi_to_Pa;
 inputs.fuel_pressurant.tank_volume = 0.0*L_to_m3;
 inputs.fuel_pressurant.flow_CdA = 8*mm_to_m^2;
 

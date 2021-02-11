@@ -168,7 +168,5 @@ def run_performance():
         print("Time elapsed for this timestep: {} sec.".format(time_elapsed))
 
 
-
-
 if __name__ == "__main__":
     run_performance()
