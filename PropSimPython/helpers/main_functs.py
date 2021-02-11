@@ -4,7 +4,7 @@
 
 import numpy as np
 from typing import Tuple
-from state_flow import init_liquid_state
+from state_flow import init_liquid_state, LiquidStateVector
 
 
 def integration(inputs: dict) -> Tuple[float, dict]:

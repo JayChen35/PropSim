@@ -5,7 +5,7 @@
 import numpy as np
 
 
-class LiquidStateVec():
+class LiquidStateVector():
     def __init__(self, inputs: dict):
         super().__init__()
         self.T_fuel_tank_press = None # Fuel tank temperature
@@ -34,7 +34,15 @@ class LiquidStateVec():
     #     T_fuelpresstank = self.inputs.T_amb*
     #         (self.p_fuelpresstank/self.inputs.fuel_pressurant.storage_initial_pressure)^
     #         ((self.inputs.fuel_pressurant.gas_properties.gamma-1)/
-    #         self.inputs.fuel_pressurant.gas_properties.gamma);
+    #         self.inputs.fuel_pressurant.gas_properties.gamma),
+
+    def p_fuelpresstank(self):
+        p_fuelpresstank = 0
+        return p_fuelpresstank
+
+    def T_fuelpresstank(self):
+        T_fuelpresstank = 298
+        return T_fuelpresstank
     
     def V_fuel(self):
         # Calculate volume of fuel
@@ -53,28 +61,34 @@ class LiquidStateVec():
     
     def column_vec(self):
         # Create output column vector
-        column_vector = [self.m_lox;
-            self.m_gox;
-            self.m_oxtank_press;
-            self.m_oxpresstank;
-            self.m_fuel_tank_press;
-            self.m_fuelpresstank;
-            self.T_oxtank;
-            self.T_fueltank_press;
-            self.m_fuel;
-            self.m_cc;
-            self.M_cc;
-            self.gamma_cc;
-            self.T_cc;];
-        return column_vector
+        vector = np.array([
+            self.m_lox,
+            self.m_gox,
+            self.m_oxtank_press,
+            self.m_oxpresstank,
+            self.m_fuel_tank_press,
+            self.m_fuelpresstank,
+            self.T_oxtank,
+            self.T_fueltank_press,
+            self.m_fuel,
+            self.m_cc,
+            self.M_cc,
+            self.gamma_cc,
+            self.T_cc
+        ])
+        column_vector = np.expand_dims(vector, axis=1)
+        if column_vector.shape[1] == 1: # Ensure this is a column vector
+            return column_vector
+        else:
+            return np.transpose(column_vector)
 
 
 def init_liquid_state(inputs: dict) -> Tuple[LiquidStateVec, np.ndarray]:
     # Initializes the state vector for a liquid system.
     # Uses the inputs to create an initial state vector for a liquid
-    state_0 = LiquidStateVector(inputs);
-    state_0 = InitializeOxtank(state_0, inputs);
-    state_0 = InitializeFueltank(state_0, inputs);
-    state_0 = InitializeCombustionChamber(state_0, inputs);
-    x0 = state_0.ColumnVector;
+    state_0 = LiquidStateVector(inputs),
+    state_0 = InitializeOxtank(state_0, inputs),
+    state_0 = InitializeFueltank(state_0, inputs),
+    state_0 = InitializeCombustionChamber(state_0, inputs),
+    x0 = state_0.ColumnVector,
     return [state_0, x0]
