@@ -94,33 +94,33 @@ def n2o_properties(temp: int or float) -> dict:
 
     NIST_data = dict() # NIST_data is an array that stores variables regarding nitrous
     
-    reader = open("N2O_Properties.cgi.txt", 'r') # create the dictonary (reader) that takes information from N2O_Properties.cgi.txt
-    try:
-        tempList = reader.readline().split("\t")
-        arr = [list() for x in range(len(tempList))]
-        for x in range(0,126):
-            tempList = reader.readline().split("\t") # read each line in the N2O_Properties.cgi.txt document and enter each line into the dictionary, separated by tabs
-            for i, val in enumerate(tempList):
-                arr[i].append(val)
-        NIST_data["T"] =     arr[0]
-        NIST_data["h_liq"] = arr[5]
-        NIST_data["h_gas"] = arr[17]
-        NIST_data["e_liq"] = arr[4]
-        NIST_data["e_gas"] = arr[16]
-        NIST_data["cv_l"]  = arr[7]
-        NIST_data["cv_g"]  = arr[19]
-        NIST_data["s_l"]   = arr[6]
-        NIST_data["s_g"]   = arr[18]
-
+    reader = open("D:\\ProjectCaelus\\PropSim\\Supporting Functions\\N2O_Properties.cgi.txt", 'r') # create the dictonary (reader) that takes information from N2O_Properties.cgi.txt
+    tempList = reader.readline().split("\t")
+    arr = [list() for x in range(len(tempList))]
+    for x in range(0,126):
+        tempList = reader.readline().split("\t") # read each line in the N2O_Properties.cgi.txt document and enter each line into the dictionary, separated by tabs
+        for i, val in enumerate(tempList):
+            arr[i].append(val)
+    NIST_data["T"] =     arr[0]
+    NIST_data["h_liq"] = arr[5]
+    NIST_data["h_gas"] = arr[17]
+    NIST_data["e_liq"] = arr[4]
+    NIST_data["e_gas"] = arr[16]
+    NIST_data["cv_l"]  = arr[7]
+    NIST_data["cv_g"]  = arr[19]
+    NIST_data["s_l"]   = arr[6]
+    NIST_data["s_g"]   = arr[18]
+    NIST_data["cp_liq"]= arr[8]
+    NIST_data["cp_gas"]= arr[20]
     reader.close()
-    
+    NIST_data = {key: np.array(NIST_data[key], dtype="float64") for key in NIST_data}
     #properties["h_l"] = np.interp(NIST_data["T"], NIST_data.h_liq, temp)*1000 # J/kg, 
 
     # Gas Specific Enthalpy
-    properties["h_l"] = np.interp(temp, NIST_data["T"], NIST_data["h_liq"])*1000 # J/kg, 
-    properties["h_g"] = np.interp(temp, NIST_data["T"], NIST_data.["h_g"])*1000 # J/kg
-    properties["e_l"] = np.interp(temp, NIST_data["T"], NIST_data.["e_liq"])*1000 # J/kg
-    properties["e_g"] = np.interp(temp, NIST_data["T"], NIST_data.["e_gas"])*1000 # J/kg
+    properties["h_l"] = np.interp(temp, NIST_data["T"], NIST_data["h_liq"])*1000 # J/kg,   
+    properties["h_g"] = np.interp(temp, NIST_data["T"], NIST_data["h_gas"])*1000 # J/kg   
+    properties["e_l"] = np.interp(temp, NIST_data["T"], NIST_data["e_liq"])*1000 # J/kg   
+    properties["e_g"] = np.interp(temp, NIST_data["T"], NIST_data["e_gas"])*1000 # J/kg   
     properties["deltaH_vap"] = properties["h_g"]-properties["h_l"]
     properties["deltaE_vap"] = properties["e_g"]-properties["e_l"]
 
@@ -131,18 +131,20 @@ def n2o_properties(temp: int or float) -> dict:
     properties["cv_g"] = np.interp(temp, NIST_data["T"], NIST_data["cv_g"])*1000
 
     # Specific Heat at Constant Pressure
-    properties["cp_l"] = np.interp(temp, NIST_data["T"], NIST_data["cp_l"])*1000
-    properties["cp_g"] = np.interp(temp, NIST_data["T"], NIST_data["cp_g"])*1000
+    properties["cp_l"] = np.interp(temp, NIST_data["T"], NIST_data["cp_liq"])*1000
+    properties["cp_g"] = np.interp(temp, NIST_data["T"], NIST_data["cp_gas"])*1000
 
     # Specific Entropy
     properties["s_l"] = np.interp(temp, NIST_data["T"], NIST_data["s_l"])*1000
     properties["s_g"] = np.interp(temp, NIST_data["T"], NIST_data["s_g"])*1000
 
     # Convert Properties to Standard Units
-    properties["mu_l"] = properties["mu_l"]*10^-3 # mN*s/(m^2) -> N*s/m^2
-    properties["mu_g"] = properties["mu_g"]*10^-6 # uN*s/(m^ 2)-> N*s/m^2
+    properties["mu_l"] = properties["mu_l"]*10**-3 # mN*s/(m^2) -> N*s/m^2
+    properties["mu_g"] = properties["mu_g"]*10**-6 # uN*s/(m^ 2)-> N*s/m^2
 
     return properties
 
 def n2o_find_T(p_vap: int or float) -> float:
     raise NotImplementedError
+
+print(n2o_properties(273))
