@@ -8,7 +8,7 @@ import time
 from scipy.integrate import solve_ivp
 from typing import Tuple
 from helpers.n2o import n2o_properties, n2o_find_T
-from helpers.state_flow import liquid_state_vec
+from helpers.state_flow import StateVector, LiquidStateVector, liquid_state_vec
 from helpers.wrappers import fast_interp_1, fast_interp_2, fast_interp_3
 from main_functs import integration, find_G, find_mass_gradient
 
@@ -47,11 +47,14 @@ inputs = {
         # Output time resolution
         "dt": 0.01, # sec
         # True for plots, False for no plots
-        "output_on": True
+        "output_on": True,
+        # True for simulation flight, False for static fires
+        "flight_on": True
     },
 
     #--------Oxidizer Properties---------
     "ox": {
+        # TODO: Add Cv element to add to injector area
         "injector_area": 2.571e-05, # m^2
         # Discharge coefficient (Cd)
         "injector_Cd": 0.9, 
@@ -71,6 +74,7 @@ inputs = {
 
     #----------Fuel Properties-----------
     "fuel": {
+        # TODO: Add Cv element to add to injector area
         "injector_area": 6.545e-06, # m^2
         # Discharge coefficient (Cd)
         "injector_Cd": 0.88, 
@@ -90,20 +94,39 @@ inputs = {
         "rho": 789
     },
 
+    #-----Oxidizer Pressurant Properties------
+    # NOTE: There is no oxidizer pressurant since we're using pressure blowdown with no supercharging    
+    "ox_pressurant": {
+        "gas_props": {
+            "name": None,
+            "c_v": 0, # Specific volume
+            "mol_mass": 0 # Molecular mass
+        },
+        "set_pressure": 0*psi_to_Pa, # Regulator pressure setting
+        "storage_init_press": 0*psi_to_Pa, # Pressure of supercharging tank
+        "stroage_tank_V": 0.0*L_to_m3, # Volume of supercharging tank
+        "flow_CdA": 0*mm_to_m**2, # Regulator CdA (m^2)
+        "active": False # Are we supercharging (external pressurant tank)?
+    },
+
     #-----Fuel Pressurant Properties------
     "fuel_pressurant": {
         "gas_props": {
-            # Specific volume
-            "c_v": None,
-            # Molecular mass
-            "mol_mass": None
+            "name": "Nitrogen",
+            "c_v": 0.743e3, # Specific volume (J/kg*K)
+            "mol_mass": 2*14.0067e-3, # Molecular mass (kg/mol)
+            "R_spec": None,
+            "c_p": None, # Specific heat pressure
+            "gamma": None # Ratio of specific heats
         },
         # The items below aren't used in pressure blowdown
-        "set_pressure": 350*psi_to_Pa,
-        "storage_init_press": 4500*psi_to_Pa,
-        "stroage_tank_V": 0.0*L_to_m3,
-        "flow_CdA": 8*mm_to_m**2 # m^2
+        "set_pressure": 750*psi_to_Pa, # Regulator pressure setting
+        "storage_init_press": 0*psi_to_Pa, # Pressure of supercharging tank
+        "stroage_tank_V": 0.0*L_to_m3, # Volume of supercharging tank
+        "flow_CdA": 8*mm_to_m**2, # Regulator CdA (m^2)
+        "active": False # Are we supercharging (external pressurant tank)?
     },
+
 
     #----------Other Properties-----------
     # Ball valve time to injector area (s)
@@ -129,10 +152,16 @@ inputs = {
     "p_amb": 9.554e04, # Pa
 }
 
+# Preprocess some variables in the inputs dictionary
+inputs["fuel_pressurant"]["gas_props"]["R_spec"] = inputs["constants"]["R_u"]/ \
+    inputs["fuel_pressurant"]["gas_props"]["mol_mass"]
+inputs["fuel_pressurant"]["gas_props"]["c_p"] = inputs["fuel_pressurant"]["gas_props"]["c_v"]+inputs["fuel_pressurant"]["gas_props"]["R_spec"]
+inputs["fuel_pressurant"]["gas_props"]["gamma"] = inputs["fuel_pressurant"]["gas_props"]["c_p"]/inputs["fuel_pressurant"]["gas_props"]["c_v"]
+
 
 def run_performance():
     """
-    Runs integration.py to integrate the state vector and records output
+    Runs integration.py to integrate the state vector and records output.
     """
     # Get oxidizer properties at the given temperature
     n2o = n2o_properties(inputs["ox"]["T_tank"])

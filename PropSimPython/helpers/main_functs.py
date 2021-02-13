@@ -1,4 +1,4 @@
-# Helper Methods for PropSimPython
+# Main helper methods for PropSimPython
 # Project Caelus, Aphlex 1C Engine
 # 02 February, 2021
 
@@ -9,9 +9,8 @@ from state_flow import init_liquid_state, LiquidStateVector
 
 def integration(inputs: dict) -> Tuple[float, dict]:
     """
-    Integrate necesary differential equations for rocket engine modeling 
-    using Euler's method. TODO: Include real combustion properties and 
-    supercharging.
+    Integrate necesary differential equations for rocket engine modeling using Euler's method. 
+    TODO: Include real combustion properties and supercharging.
 
     INPUTS:
         - inputs: structure of motor characteristics (all units SI: m, s, 

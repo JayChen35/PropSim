@@ -1,4 +1,4 @@
-# Helper Methods for PropSimPython
+# Nozzle/isentropic flow helper methods for PropSimPython
 # Project Caelus, Aphlex 1C Engine
 # 02 February, 2021
 

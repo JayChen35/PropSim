@@ -1,4 +1,4 @@
-# Helper Methods for PropSimPython
+# Nitrous-related helper methods for PropSimPython
 # Project Caelus, Aphlex 1C Engine
 # 02 February, 2021
 
@@ -8,41 +8,41 @@ import numpy as np
 
 def n2o_properties(temp: int or float) -> dict:
     """
-    Calculates an array of properties of nitrous oxide given a temperature in K
+    Calculates an array of properties of nitrous oxide given a temperature in K.
     WARNING: if temperature input is outside of -90 to 30 C, properties will
-    be generated for boundary (-90 C or 30 C)
+    be generated for boundary (-90 C or 30 C).
     """
-    properties = dict() #creates properties (output array) as a dictionary for which data from text file can be entered
-    properties["Pvap"]       = None # nitrous vapor pressure
-    properties["rho_l"]      = None # liquid density of nitrous
-    properties["rho_g"]      = None # gas denisty of nitrous
-    properties["deltaH_vap"] = None #
-    properties["cp_l"]       = None # ?
-    properties["cv_l"]       = None # specific volume of liquid nitrous
-    properties["cp_g"]       = None # 
-    properties["cv_g"]       = None # specific volume of gaseous nitrous 
-    properties["h_l"]        = None # enthalpy of liquid nitrous
-    properties["h_g"]        = None # enthalpy of gaseous nitrous
-    properties["s_l"]        = None # entropy of liquid nitrous
-    properties["s_g"]        = None # entropy of gaseous nitrous
-    properties["mu_l"]       = None # dynamic viscosity of nitrous liquid
-    properties["mu_g"]       = None # dynamic viscosity of nitrous gas
-    properties["e_l"]        = None # 
-    properties["e_g"]        = None
+    properties = dict() # Creates properties (output array) as a dictionary for which data from text file can be entered
+    properties["Pvap"]       = None # Nitrous vapor pressure
+    properties["rho_l"]      = None # Liquid density of nitrous
+    properties["rho_g"]      = None # Gas denisty of nitrous
+    properties["deltaH_vap"] = None # Vaportization enthalpy
+    properties["cp_l"]       = None # Specific heat of liquid nitrous
+    properties["cv_l"]       = None # Specific volume of liquid nitrous
+    properties["cp_g"]       = None # Specific heat of gaseous nitrous
+    properties["cv_g"]       = None # Specific volume of gaseous nitrous 
+    properties["h_l"]        = None # Enthalpy of liquid nitrous
+    properties["h_g"]        = None # Enthalpy of gaseous nitrous
+    properties["s_l"]        = None # Specific entropy of liquid nitrous
+    properties["s_g"]        = None # Specific entropy of gaseous nitrous
+    properties["mu_l"]       = None # Dynamic viscosity of nitrous liquid
+    properties["mu_g"]       = None # Dynamic viscosity of nitrous gas
+    properties["e_l"]        = None # Specific internal energy of liquid
+    properties["e_g"]        = None # Specific internal energy of gas
         
     R_u = 8.3144621 # Universal gas constant [J/mol*K]
     M_n2o = 0.044013 # Molecular mass of nitrous oxide [kg/mol]
     R_n2o_0 = R_u/M_n2o # Specific gas constant of nitrous oxide [J/kg*K]
 
     # Range-check temperature
-    if temp < (-90 + 273.15): # if temperature is less that bottom bound
-        temp = -90 + 273.150001  # temperature is bottom bound for interpolate
-    elif temp > (30 + 273.150001): # if temperature greater than top bound, 
-        temp = 30 + 273.150001 # temperature equal to top bound for interpolate
+    if temp < (-90 + 273.15): # If temperature is less that bottom bound
+        temp = -90 + 273.150001  # Temperature is bottom bound for interpolate
+    elif temp > (30 + 273.150001): # If temperature greater than top bound, 
+        temp = 30 + 273.150001 # Temperature equal to top bound for interpolate
 
-    Tcrit = 309.57 #K
-    Pcrit = 7251   #kPa
-    rhocrit = 452 #kg/m^3
+    Tcrit = 309.57 # K
+    Pcrit = 7251 # kPa
+    rhocrit = 452 # kg/m^3
     #possibly add critical compressibility factor "Z"
     Tr = temp/Tcrit
 
@@ -89,32 +89,30 @@ def n2o_properties(temp: int or float) -> dict:
     Trinv = 1./Tr
 
     properties["mu_g"] = np.exp(b1 + b2*(Trinv-1)**(1/3) + b3*(Trinv-1)**(4/3))
-
-    # TODO: Find Specific Enthalpy?
-
     NIST_data = dict() # NIST_data is an array that stores variables regarding nitrous
-    
-    reader = open("D:\\ProjectCaelus\\PropSim\\Supporting Functions\\N2O_Properties.cgi.txt", 'r') # create the dictonary (reader) that takes information from N2O_Properties.cgi.txt
-    tempList = reader.readline().split("\t")
-    arr = [list() for x in range(len(tempList))]
-    for x in range(0,126):
-        tempList = reader.readline().split("\t") # read each line in the N2O_Properties.cgi.txt document and enter each line into the dictionary, separated by tabs
-        for i, val in enumerate(tempList):
-            arr[i].append(val)
-    NIST_data["T"] =     arr[0]
-    NIST_data["h_liq"] = arr[5]
-    NIST_data["h_gas"] = arr[17]
-    NIST_data["e_liq"] = arr[4]
-    NIST_data["e_gas"] = arr[16]
-    NIST_data["cv_l"]  = arr[7]
-    NIST_data["cv_g"]  = arr[19]
-    NIST_data["s_l"]   = arr[6]
-    NIST_data["s_g"]   = arr[18]
-    NIST_data["cp_liq"]= arr[8]
-    NIST_data["cp_gas"]= arr[20]
-    reader.close()
+
+    # Read each line in the N2O_Properties.cgi.txt document and enter each line into the dictionary, separated by tabs
+    with open("./data/N2O_Properties.cgi.txt", "r") as reader:
+        for x, line in enumerate(reader):
+            if x ==0:
+                temp_list = line.split("\t")
+                arr = [list() for x in range(len(temp_list))]
+                continue
+            temp_list = line.split("\t") 
+            for i, val in enumerate(temp_list):
+                arr[i].append(val)
+        NIST_data["T"] =     arr[0]
+        NIST_data["h_liq"] = arr[5]
+        NIST_data["h_gas"] = arr[17]
+        NIST_data["e_liq"] = arr[4]
+        NIST_data["e_gas"] = arr[16]
+        NIST_data["cv_l"]  = arr[7]
+        NIST_data["cv_g"]  = arr[19]
+        NIST_data["s_l"]   = arr[6]
+        NIST_data["s_g"]   = arr[18]
+        NIST_data["cp_liq"]= arr[8]
+        NIST_data["cp_gas"]= arr[20]
     NIST_data = {key: np.array(NIST_data[key], dtype="float64") for key in NIST_data}
-    #properties["h_l"] = np.interp(NIST_data["T"], NIST_data.h_liq, temp)*1000 # J/kg, 
 
     # Gas Specific Enthalpy
     properties["h_l"] = np.interp(temp, NIST_data["T"], NIST_data["h_liq"])*1000 # J/kg,   
@@ -123,8 +121,6 @@ def n2o_properties(temp: int or float) -> dict:
     properties["e_g"] = np.interp(temp, NIST_data["T"], NIST_data["e_gas"])*1000 # J/kg   
     properties["deltaH_vap"] = properties["h_g"]-properties["h_l"]
     properties["deltaE_vap"] = properties["e_g"]-properties["e_l"]
-
-    #np.interp(temp, )
 
     # Specific Heat at Constant Volume
     properties["cv_l"] = np.interp(temp, NIST_data["T"], NIST_data["cv_l"])*1000
@@ -144,7 +140,6 @@ def n2o_properties(temp: int or float) -> dict:
 
     return properties
 
+
 def n2o_find_T(p_vap: int or float) -> float:
     raise NotImplementedError
-
-print(n2o_properties(273))
