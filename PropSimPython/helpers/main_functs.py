@@ -1,17 +1,18 @@
 # Main helper methods for PropSimPython
 # Project Caelus, Aphlex 1C Engine
-# 02 February, 2021
+# Jason Chen, 10 February, 2021
+
 
 import numpy as np
 from typing import Tuple
+from classes import Struct
 from state_flow import init_liquid_state, LiquidStateVector
 
 
-def integration(inputs: dict) -> Tuple[float, dict]:
+def integration(inputs: Struct) -> Tuple[float, Struct]:
     """
     Integrate necesary differential equations for rocket engine modeling using Euler's method. 
     TODO: Include real combustion properties and supercharging.
-
     INPUTS:
         - inputs: structure of motor characteristics (all units SI: m, s, 
         kg, K, mol)
@@ -81,7 +82,7 @@ def integration(inputs: dict) -> Tuple[float, dict]:
         tspan
     """
     # Recording the output data for this timestep
-    record = { 
+    record_config = { 
         "F_thrust"        : None,
         "p_cc"            : None,
         "p_oxtank"        : None,
@@ -92,7 +93,7 @@ def integration(inputs: dict) -> Tuple[float, dict]:
         "T_oxtank"        : None,
         "T_cc"            : None,
         "area_core"       : None,
-        "OF_i"            : None,
+        "of_ratio_i"      : None,
         "gamma_ex"        : None,
         "m_dot_ox"        : None,
         "m_dot_fuel"      : None,
@@ -102,6 +103,7 @@ def integration(inputs: dict) -> Tuple[float, dict]:
         "p_exit"          : None,
         "p_shock"         : None
     } 
+    record = Struct(record_config) # Convert into Struct class
     state_0, x0 = init_liquid_state(inputs)
     
 

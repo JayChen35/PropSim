@@ -1,12 +1,13 @@
 # Nitrous-related helper methods for PropSimPython
 # Project Caelus, Aphlex 1C Engine
-# 02 February, 2021
+# Liam West, Anya Mischel, & Jason Chen, 10 February, 2021
 
 
 import numpy as np
+from classes import Struct
 
 
-def n2o_properties(temp: int or float) -> dict:
+def n2o_properties(temp: int or float) -> Struct:
     """
     Calculates an array of properties of nitrous oxide given a temperature in K.
     WARNING: if temperature input is outside of -90 to 30 C, properties will
@@ -138,7 +139,9 @@ def n2o_properties(temp: int or float) -> dict:
     properties["mu_l"] = properties["mu_l"]*10**-3 # mN*s/(m^2) -> N*s/m^2
     properties["mu_g"] = properties["mu_g"]*10**-6 # uN*s/(m^ 2)-> N*s/m^2
 
-    return properties
+    props = Struct(properties) # Converts the output properties into standardized Struct type
+
+    return props
 
 
 def n2o_find_T(p_vap: int or float) -> float:

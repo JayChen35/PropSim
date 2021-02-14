@@ -1,15 +1,16 @@
 # State-flow helper methods for PropSimPython
 # Project Caelus, Aphlex 1C Engine
-# 02 February, 2021
+# Jason Chen, 10 February, 2021
+
 
 import numpy as np
-
+from classes import Struct
 
 class StateVector():
     """
     A class representing an engine state vector, allowing access to variables by name.
     """
-    def __init__(self, inputs: dict):
+    def __init__(self, inputs: Struct):
         super().__init__()
         self.inputs = inputs
         # Tank properties
@@ -27,7 +28,7 @@ class StateVector():
 
     def V_lox(self):
         # Calculate volume of liquid oxidizer
-        V_lox = self.m_lox / self.n2o_props["rho_l"]
+        V_lox = self.m_lox / self.n2o_props.rho_l
         return V_lox
 
     def p_oxtank(self):
@@ -37,20 +38,20 @@ class StateVector():
         
     def oxtank_m_cv(self):
         # Thermal capacity of oxidizer tank (constant volume)
-        m_cv = (self.m_lox*self.n2o_props["cv_l"] + self.m_gox*self.n2o_props["cv_g"] + \
-            self.m_oxtank_press*self.inputs["ox_pressurant"]["gas_props"]["c_v"])
+        m_cv = (self.m_lox*self.n2o_props.cv_l + self.m_gox*self.n2o_props.cv_g + \
+            self.m_oxtank_press*self.inputs.ox_pressurant.gas_props.c_v)
         return m_cv
     
     def oxtank_m_cp(self):
         # Thermal capacity of oxidizer tank (constant pressure)
-        m_cp = (self.m_lox*self.n2o_props["cp_l"] + self.m_gox*self.n2o_props["cp_g"] + \
-            self.m_oxtank_press*self.inputs["ox_pressurant"]["gas_props"]["c_p"])
+        m_cp = (self.m_lox*self.n2o_props.cp_l + self.m_gox*self.n2o_props.cp_g + \
+            self.m_oxtank_press*self.inputs.ox_pressurant.gas_props.c_p)
         return m_cp
     
     def p_gox(self):
         # Calculate oxidizer tank partial pressure of oxidizer
         M_n2o = 0.044013 # Molecular mass of nitrous oxide [kg/mol]
-        R_n2o = self.inputs["constants"]["Ru"]/M_n2o #  Specific gas constant of nitrous oxide [J/kg*K]
+        R_n2o = self.inputs.constants.R_u/M_n2o #  Specific gas constant of nitrous oxide [J/kg*K]
         a_n2o = 0.38828/M_n2o^2 # van der Waal's constant a for N2O [[Pa*(kg/m^3)^-2]]
         b_n2o = 44.15/M_n2o*10^-6 # van der Waal's constant a for N2O [m^3/kg]
         p_gox = press_VDW(self.T_oxtank, self.m_gox/self.V_ox_ullage, R_n2o, a_n2o, b_n2o)
@@ -58,29 +59,29 @@ class StateVector():
     
     def p_oxmanifold(self):
         # Calculate manifold pressure
-        accel_net = 0 # TODO: Fix this
+        accel_net = 0 # Net acceleration initially is zero, and then is modified later in integration.py
         # Calculate height difference between liquid level and manifold
-        dh_lox = self.inputs["ox"]["h_offset_tank"] + self.V_lox/(np.pi*(self.inputs["ox.tank_id"]/2)**2)
+        dh_lox = self.inputs.ox.h_offset_tank + self.V_lox/(np.pi*(self.inputs.ox.tank_id/2)**2)
         # Calculate acceleration of oxidizer
-        if self.inputs["options"]["flight_on"]:
-            accel_rel = accel_net + self.inputs["constants"]["g_0"]
+        if self.inputs.options.flight_on:
+            accel_rel = accel_net + self.inputs.constants.g_0
         else:
-            accel_rel = self.inputs["constants"]["g_0"]
+            accel_rel = self.inputs.constants.g_0
         # Calculate manifold pressure
-        p_oxmanifold = self.p_oxtank + accel_rel*self.n2o_props["rho_l"]*dh_lox
+        p_oxmanifold = self.p_oxtank + accel_rel*self.n2o_props.rho_l*dh_lox
         return p_oxmanifold
     
     def p_oxtank_press(self):
         # Calculate oxidizer tank partial pressure of pressurant
-        p_oxtank_press = self.m_oxtank_press*self.inputs["ox_pressurant"]["gas_props"]["R_specific"]* \
+        p_oxtank_press = self.m_oxtank_press*self.inputs.ox_pressurant.gas_props.R_spec* \
             self.T_oxtank/self.V_ox_ullage
         return p_oxtank_press
     
     def p_oxpresstank(self):
         # Calculate pressure in oxidizer pressurant tank
-        m_press_initial = self.inputs.ox_pressurant.storage_initial_pressure* \
-            self.inputs.ox_pressurant.tank_volume/( \
-            self.inputs.ox_pressurant.gas_properties.R_specific.* \
+        m_press_initial = self.inputs.ox_pressurant.storage_init_press* \
+            self.inputs.ox_pressurant.tank_V/( \
+            self.inputs.ox_pressurant.gas_properties.R_specific* \
             self.inputs.T_amb)
         p_oxpresstank = self.inputs.ox_pressurant.storage_initial_pressure* \
             (self.m_oxpresstank/m_press_initial)^ \
@@ -103,9 +104,9 @@ class StateVector():
     def gamma_ox_ullage(self):
         # Calculate ullage gas ratio of specific heats
         gamma_ox_ullage = (self.m_gox*self.n2o_props.cp_g +  \
-            self.m_oxtank_press*self.inputs.ox_pressurant.gas_properties.c_p)/ \
+            self.m_oxtank_press*self.inputs.ox_pressurant.gas_props.c_p)/ \
             (self.m_gox*self.n2o_props.cv_g +  \
-            self.m_oxtank_press*self.inputs.ox_pressurant.gas_properties.c_v)
+            self.m_oxtank_press*self.inputs.ox_pressurant.gas_props.c_v)
         return gamma_ox_ullage
     
     def p_cc(self):
@@ -116,7 +117,7 @@ class StateVector():
 
     def press_VDW(self, T: float, rho: float, R: float, a: float, b: float):
         # PVDW VanDerWaal's equation of state for pressure
-        p = R*T/(1/rho-b)-a*rho**2 # Division and power should be ./ and .^
+        p = R*T/(1/rho-b)-a*rho**2 # ./ is item-wise division; simply / in NumPy.
         return p
 
 
@@ -131,7 +132,7 @@ class LiquidStateVector(StateVector):
     
     def p_fuel_tank(self):
         # Calculate fuel tank pressure
-        p_fueltank = self.m_fuel_tank_press*self.inputs.fuel_pressurant.gas_properties.R_specific* \
+        p_fueltank = self.m_fuel_tank_press*self.inputs.fuel_pressurant.gas_props.R_spec* \
             self.T_fueltank_press/self.V_fuel_ullage
         return p_fueltank
     
@@ -139,7 +140,7 @@ class LiquidStateVector(StateVector):
     #     # Calculate pressure in fuel pressurant tank
     #     m_press_initial = self.inputs.fuel_pressurant.storage_initial_pressure* \
     #         self.inputs.fuel_pressurant.tank_volume/ \
-    #             (self.inputs.fuel_pressurant.gas_properties.R_specific.*self.inputs.T_amb)
+    #             (self.inputs.fuel_pressurant.gas_properties.R_specific*self.inputs.T_amb)
     #     p_fuelpresstank = self.inputs.fuel_pressurant.storage_initial_pressure* \
     #         (self.m_fuelpresstank/m_press_initial)^self.inputs.fuel_pressurant.gas_properties.gamma
     #     return p_fuelpresstank
@@ -161,17 +162,17 @@ class LiquidStateVector(StateVector):
     
     def V_fuel(self):
         # Calculate volume of fuel
-        V_fuel = self.m_fuel / self.inputs["fuel"]["rho"]
+        V_fuel = self.m_fuel / self.inputs.fuel.rho
         return V_fuel
     
     def V_fuel_ullage(self):
         # Calculate ullage volume in fuel tank
-        V_fuel_ullage = self.inputs["fuel"]["tank_V"] - self.V_fuel()
+        V_fuel_ullage = self.inputs.fuel.tank_V - self.V_fuel()
         return V_fuel_ullage
     
     def V_cc(self):
         # Calculate combustion chamber volume
-        V_cc = np.pi/4*(self.inputs["d_cc"])**2*self.inputs["length_cc"]
+        V_cc = np.pi/4*(self.inputs.d_cc)**2*self.inputs.length_cc
         return V_cc
     
     def column_vec(self):
@@ -201,7 +202,7 @@ class LiquidStateVector(StateVector):
         raise NotImplementedError
 
 
-def init_liquid_state(inputs: dict) -> Tuple[LiquidStateVec, np.ndarray]:
+def init_liquid_state(inputs: Struct) -> Tuple[LiquidStateVec, np.ndarray]:
     # Initializes the state vector for a liquid system.
     # Uses the inputs to create an initial state vector for a liquid
     state_0 = LiquidStateVector(inputs),

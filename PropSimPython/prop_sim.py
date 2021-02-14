@@ -1,7 +1,16 @@
-# PropSim in Python 3.8
+# PropSim in Python 3.6+
 # Project Caelus, Aphlex 1C Engine
 # 09 February, 2021
 # Authors: Jason Chen, Liam West, Anya Mischel, Jack Blair
+
+"""
+Liquid Rocket Engine Performance Simulation Code (PropSim). See README.md for more information.
+
+This script simulates the behavior and performance of small liquid rocket engines, namely those that
+use nitrous oxide as their oxidizer. Any fuel type can be modeled. This file acts as the driver,
+with a dictionary named "config" (below) used to set engine parameters and propellant properties.
+"""
+
 
 import numpy as np
 import time
@@ -10,6 +19,7 @@ from typing import Tuple
 from helpers.n2o import n2o_properties, n2o_find_T
 from helpers.state_flow import StateVector, LiquidStateVector, liquid_state_vec
 from helpers.wrappers import fast_interp_1, fast_interp_2, fast_interp_3
+from helpers.classes import Struct, Gas
 from main_functs import integration, find_G, find_mass_gradient
 
 
@@ -22,7 +32,7 @@ lbm_to_kg = 0.453592 # 1 lbm in kg
 atm_to_Pa = 101325 # 1 atm in Pa
 L_to_m3 = 1e-3 # 1 L in m^3
 
-inputs = {
+config = {
     #-------------Constants-------------
     "constants": {
         "R_u": 8.3144621, # Universal gas constant [J/mol*K]
@@ -97,11 +107,7 @@ inputs = {
     #-----Oxidizer Pressurant Properties------
     # NOTE: There is no oxidizer pressurant since we're using pressure blowdown with no supercharging    
     "ox_pressurant": {
-        "gas_props": {
-            "name": None,
-            "c_v": 0, # Specific volume
-            "mol_mass": 0 # Molecular mass
-        },
+        "gas_props": Gas("Nitrogen").to_dict(), # Again, this isn't used since we're not supercharging
         "set_pressure": 0*psi_to_Pa, # Regulator pressure setting
         "storage_init_press": 0*psi_to_Pa, # Pressure of supercharging tank
         "stroage_tank_V": 0.0*L_to_m3, # Volume of supercharging tank
@@ -111,14 +117,7 @@ inputs = {
 
     #-----Fuel Pressurant Properties------
     "fuel_pressurant": {
-        "gas_props": {
-            "name": "Nitrogen",
-            "c_v": 0.743e3, # Specific volume (J/kg*K)
-            "mol_mass": 2*14.0067e-3, # Molecular mass (kg/mol)
-            "R_spec": None,
-            "c_p": None, # Specific heat pressure
-            "gamma": None # Ratio of specific heats
-        },
+        "gas_props": Gas("Nitrogen").to_dict(),
         # The items below aren't used in pressure blowdown
         "set_pressure": 750*psi_to_Pa, # Regulator pressure setting
         "storage_init_press": 0*psi_to_Pa, # Pressure of supercharging tank
@@ -152,22 +151,18 @@ inputs = {
     "p_amb": 9.554e04, # Pa
 }
 
-# Preprocess some variables in the inputs dictionary
-inputs["fuel_pressurant"]["gas_props"]["R_spec"] = inputs["constants"]["R_u"]/ \
-    inputs["fuel_pressurant"]["gas_props"]["mol_mass"]
-inputs["fuel_pressurant"]["gas_props"]["c_p"] = inputs["fuel_pressurant"]["gas_props"]["c_v"]+inputs["fuel_pressurant"]["gas_props"]["R_spec"]
-inputs["fuel_pressurant"]["gas_props"]["gamma"] = inputs["fuel_pressurant"]["gas_props"]["c_p"]/inputs["fuel_pressurant"]["gas_props"]["c_v"]
-
 
 def run_performance():
     """
     Runs integration.py to integrate the state vector and records output.
     """
+    # Create a Struct data instance from config
+    inputs = Struct(config)
     # Get oxidizer properties at the given temperature
-    n2o = n2o_properties(inputs["ox"]["T_tank"])
+    n2o = n2o_properties(inputs.ox.T_tank)
     # Our integration variables are oxidizer mass and liquid oxidizer volume
-    Mox = n2o["rho_l"]*(inputs["ox"]["liquid_V"]) + n2o["rho_g"]*(inputs["ox"]["tank_V"]-inputs["ox"]["liquid_V"])
-    if inputs["options"]["output_on"]:
+    Mox = n2o.rho_l*(inputs.ox.liquid_V) + n2o.rho_g*(inputs.ox.tank_V-inputs.ox.liquid_V)
+    if inputs.options.output_on:
         print("Initial oxidizer mass: {} kg.".format(Mox))
     start = time.perf_counter() # Start timer for integration
 
@@ -193,7 +188,7 @@ def run_performance():
     p_shock         = record.p_shock
 
     time_elapsed = start-time.perf_counter()
-    if inputs["options"]["output_on"]:
+    if inputs.options.output_on:
         print("Time elapsed for this timestep: {} sec.".format(time_elapsed))
 
 

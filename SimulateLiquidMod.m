@@ -38,7 +38,7 @@ test_data.t_offset = 0; % Time offset of test data wrt simulation data [s]
 mode.combustion_on = 1;
 % 1: simulate flight conditions (i.e. acceleration head), 0: ground test 
 % conditions
-mode.flight_on = 0;
+mode.flight_on = 0; % Currently does not work if flight_on = 1
 % 'hybrid' for solid fuel, liquid oxidizer, 'liquid' for liquid fuel and
 % oxidizer
 mode.type = 'liquid';
