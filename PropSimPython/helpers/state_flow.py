@@ -5,6 +5,7 @@
 
 import numpy as np
 from classes import Struct
+from n2o import n2o_properties
 
 class StateVector():
     """
@@ -81,19 +82,19 @@ class StateVector():
         # Calculate pressure in oxidizer pressurant tank
         m_press_initial = self.inputs.ox_pressurant.storage_init_press* \
             self.inputs.ox_pressurant.tank_V/( \
-            self.inputs.ox_pressurant.gas_properties.R_specific* \
+            self.inputs.ox_pressurant.gas_props.R_spec* \
             self.inputs.T_amb)
-        p_oxpresstank = self.inputs.ox_pressurant.storage_initial_pressure* \
+        p_oxpresstank = self.inputs.ox_pressurant.storage_init_press* \
             (self.m_oxpresstank/m_press_initial)^ \
-            self.inputs.ox_pressurant.gas_properties.gamma
+            self.inputs.ox_pressurant.gas_props.gamma
         return p_oxpresstank
     
     def T_oxpresstank(self):
         # Calculate temperature in oxidizer pressurant tank
         T_oxpresstank = self.inputs.T_amb* \
-            (self.p_oxpresstank/self.inputs.ox_pressurant.storage_initial_pressure)^ \
-            ((self.inputs.ox_pressurant.gas_properties.gamma-1)/ \
-            self.inputs.ox_pressurant.gas_properties.gamma)
+            (self.p_oxpresstank/self.inputs.ox_pressurant.storage_init_press)^ \
+            ((self.inputs.ox_pressurant.gas_props.gamma-1)/ \
+            self.inputs.ox_pressurant.gas_props.gamma)
         return T_oxpresstank
     
     def V_ox_ullage(self):
@@ -116,8 +117,8 @@ class StateVector():
         return p_cc
 
     def press_VDW(self, T: float, rho: float, R: float, a: float, b: float):
-        # PVDW VanDerWaal's equation of state for pressure
-        p = R*T/(1/rho-b)-a*rho**2 # ./ is item-wise division; simply / in NumPy.
+        # VanDerWaal's equation of state, solving for pressure
+        p = R*T/(1/rho-b)-a*rho**2 # ./ is item-wise division simply / in NumPy.
         return p
 
 
@@ -136,21 +137,21 @@ class LiquidStateVector(StateVector):
             self.T_fueltank_press/self.V_fuel_ullage
         return p_fueltank
     
-    # def p_fuelpresstank(self):
-    #     # Calculate pressure in fuel pressurant tank
-    #     m_press_initial = self.inputs.fuel_pressurant.storage_initial_pressure* \
-    #         self.inputs.fuel_pressurant.tank_volume/ \
-    #             (self.inputs.fuel_pressurant.gas_properties.R_specific*self.inputs.T_amb)
-    #     p_fuelpresstank = self.inputs.fuel_pressurant.storage_initial_pressure* \
-    #         (self.m_fuelpresstank/m_press_initial)^self.inputs.fuel_pressurant.gas_properties.gamma
-    #     return p_fuelpresstank
+    def p_fuelpresstank(self):
+        # Calculate pressure in fuel pressurant tank
+        m_press_initial = self.inputs.fuel_pressurant.storage_init_press* \
+            self.inputs.fuel_pressurant.tank_volume/ \
+                (self.inputs.fuel_pressurant.gas_props.R_spec*self.inputs.T_amb)
+        p_fuelpresstank = self.inputs.fuel_pressurant.storage_init_press* \
+            (self.m_fuelpresstank/m_press_initial)^self.inputs.fuel_pressurant.gas_props.gamma
+        return p_fuelpresstank
     
-    # def T_fuelpresstank = T_fuelpresstank(self):
-    #     # Calculate temperature in oxidizer pressurant tank
-    #     T_fuelpresstank = self.inputs.T_amb*
-    #         (self.p_fuelpresstank/self.inputs.fuel_pressurant.storage_initial_pressure)^
-    #         ((self.inputs.fuel_pressurant.gas_properties.gamma-1)/
-    #         self.inputs.fuel_pressurant.gas_properties.gamma),
+    def T_fuelpresstank(self):
+        # Calculate temperature in oxidizer pressurant tank
+        T_fuelpresstank = self.inputs.T_amb* \
+            (self.p_fuelpresstank/self.inputs.fuel_pressurant.storage_init_press)** \
+            ((self.inputs.fuel_pressurant.gas_props.gamma-1)/self.inputs.fuel_pressurant.gas_props.gamma)
+        return T_fuelpresstank
 
     def p_fuelpresstank(self):
         p_fuelpresstank = 0
@@ -198,16 +199,77 @@ class LiquidStateVector(StateVector):
         else:
             return np.transpose(column_vector)
 
-    def from_column_vector(self):
-        raise NotImplementedError
+def lsv_from_column_vec(column_vec: np.ndarray, inputs: Struct):
+    """ Create a LiquidStateVector object from a column vector. """
+    obj                  = LiquidStateVector(inputs)
+    obj.m_lox            = column_vec[0]
+    obj.m_gox            = column_vec[1]
+    obj.m_oxtank_press   = column_vec[2]
+    obj.m_oxpresstank    = column_vec[3]
+    obj.m_fueltank_press = column_vec[4]
+    obj.m_fuelpresstank  = column_vec[5]
+    obj.T_oxtank         = column_vec[6]
+    obj.T_fueltank_press = column_vec[7]
+    obj.m_fuel           = column_vec[8]
+    obj.m_cc             = column_vec[9]
+    obj.M_cc             = column_vec[10]
+    obj.gamma_cc         = column_vec[11]
+    obj.T_cc             = column_vec[12]
+    obj.n2o_props        = n2o_properties(obj.T_oxtank)
+    return obj
 
 
 def init_liquid_state(inputs: Struct) -> Tuple[LiquidStateVec, np.ndarray]:
-    # Initializes the state vector for a liquid system.
+    """ Initializes the state vector for a liquid system. """
     # Uses the inputs to create an initial state vector for a liquid
     state_0 = LiquidStateVector(inputs),
-    state_0 = InitializeOxtank(state_0, inputs),
-    state_0 = InitializeFueltank(state_0, inputs),
-    state_0 = InitializeCombustionChamber(state_0, inputs),
-    x0 = state_0.ColumnVector,
-    return [state_0, x0]
+    state_0 = init_ox_tank(state_0, inputs),
+    state_0 = init_fuel_tank(state_0, inputs),
+    state_0 = init_comb_chamber(state_0, inputs),
+    x0 = state_0.column_vec(),
+    return state_0, x0
+
+
+def init_ox_tank(state: LiquidStateVector, inputs: Struct) -> LiquidStateVector:
+    """ Initialize oxidizer tank properties using input Struct. """
+    state.T_oxtank = inputs.ox.T_tank
+    state.n2o_props = n2o_properties(state.T_oxtank)
+    state.m_lox = state.n2o_props.rho_l*inputs.ox.V_l
+    state.m_gox = state.n2o_props.rho_g*state.V_ox_ullage
+    if inputs.ox_pressurant.active:
+        state.m_oxtank_press = (inputs.ox_pressurant.set_pressure - state.p_gox)* \
+            state.V_ox_ullage/(inputs.ox_pressurant.gas_props.R_specific*state.T_oxtank)
+        state.m_oxpresstank = inputs.ox_pressurant.storage_init_press* \
+            inputs.ox_pressurant.storage_tank_V/(inputs.ox_pressurant.gas_props.R_specific*inputs.T_amb)
+    else:
+        state.m_oxtank_press = 0
+        state.m_oxpresstank = 0
+    return state
+
+
+def init_fuel_tank(state: LiquidStateVector, inputs: Struct) -> LiquidStateVector:
+    """ Initialize fuel tank properties using input Struct. """
+    state.T_fueltank_press = inputs.T_amb
+    state.m_fuel = inputs.fuel.V_l*inputs.fuel.rho
+    if inputs.fuel_pressurant.active:
+        state.m_fueltank_press = inputs.fuel_pressurant.set_pressure* \
+            state.V_fuel_ullage/(inputs.fuel_pressurant.gas_props.R_specific*state.T_fueltank_press)
+        state.m_fuelpresstank = inputs.fuel_pressurant.storage_initial_pressure* \
+            inputs.fuel_pressurant.storage_tank_V/(inputs.fuel_pressurant.gas_props.R_specific*inputs.T_amb)
+    else:
+        state.m_fueltank_press = 0
+        state.m_fuelpresstank = 0
+    return state
+
+
+def init_comb_chamber(state: LiquidStateVector, inputs: Struct) -> LiquidStateVector:
+    """ Initialize combustion chamber properties using input Struct. """
+    M_air = 0.02897 # Mean molecular mass of air [kg/mol]
+    rho_air = 1.225 # kg/m^3
+    gamma_air = 1.4
+    # The starting gas properties in the chamber is simply ambient air
+    state.m_cc = state.V_cc*rho_air
+    state.M_cc = M_air
+    state.gamma_cc = gamma_air
+    state.T_cc = inputs.T_amb
+    return state

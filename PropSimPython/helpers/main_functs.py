@@ -4,9 +4,10 @@
 
 
 import numpy as np
+from scipy.integrate import solve_ivp
 from typing import Tuple
 from classes import Struct
-from state_flow import init_liquid_state, LiquidStateVector
+from state_flow import init_liquid_state, LiquidStateVector, lsv_from_column_vec
 
 
 def integration(inputs: Struct) -> Tuple[float, Struct]:
@@ -105,7 +106,121 @@ def integration(inputs: Struct) -> Tuple[float, Struct]:
     } 
     record = Struct(record_config) # Convert into Struct class
     state_0, x0 = init_liquid_state(inputs)
+    # Configure the integrator 
+    solve_ivp(f, method='BDF')
     
+
+def liquid_model(time: float, x: np.ndarray, inputs: Struct):
+    """ Model engine physics for a liquid motor, provide state vector derivative. """
+    
+    # Constants
+    R_u = inputs.constants.R_u # Universal gas constant [J/mol*K]
+    M_n2o = 0.044013 # Molecular mass of nitrous oxide [kg/mol]
+    R_n2o = R_u/M_n2o #  Specific gas constant of nitrous oxide [J/kg*K]
+    a_n2o = 0.38828/M_n2o^2 # van der Waal's constant a for N2O [[Pa*(kg/m^3)^-2]]
+    b_n2o = 44.15/M_n2o*10^-6 # van der Waal's constant a for N2O [m^3/kg]
+
+    state = lsv_from_column_vec(x, inputs)
+    state_dot = LiquidStateVector()
+
+    # Calculate injector mass flow rate
+    output = N2OTankMDot(inputs, state, time)
+    m_dot_lox, m_dot_gox, m_dot_oxtank_press, T_dot_drain_ox, p_crit, m_dot_ox_crit = output
+
+
+def n2o_tank_mdot(inputs: Struct, state: LiquidStateVector, time: float) -> tuple:
+    """
+    Calculates flow rate out of N2O Tank. Interpolates between liquid and gas flow 
+    based on amount of liquid oxidizer remaining. If no liquid oxidizer remains, it
+    uses gas flow. If plenty of liquid oxidizer (i.e. mass greater than set tolerance),
+    liquid flow is used. Linear interpolation is used (in order to avoid hysteresis)
+    in between with a small, steady liquid source in tank. 
+
+    Inputs:
+        - inputs: object representing motor inputs
+        - state: object representing state of system
+        - time: time
+    Outputs:
+        - m_dot_lox: mass flow rate out of tank of liquid oxidizer
+        - m_dot_gox: mass flow rate out of tank of gaseous oxidizer
+        - m_dot_oxtank_press: mass flow rate out of tank of pressurant gas
+        - T_dot_drain: oxidizer tank temperature change from draining
+        - p_crit: critical pressure below which draining flow is choked
+        - m_dot_ox_crit: critical mass flow rate below which draining flow is choked
+    """
+    # Constants
+    dm_lox_tol = 1e-2 # The tolerance as mentioned above for "plenty" of liquid [kg]
+    M_n2o = 0.044013 # Molecular mass of nitrous oxide [kg/mol]
+    a_n2o = 0.38828/M_n2o^2 # van der Waal's constant a for N2O [[Pa*(kg/m^3)^-2]]
+
+    # TODO: Below
+    """
+    # If tank pressure is greater than combustion chamber pressure
+    if state.p_oxmanifold > state.p_cc and inputs.ox.Cd_injector*inputs.ox.injector_area*inputs.Throttle(time)>0:
+        # Find flow rates for gas, flow rates for liquid, interpolate within tolerance for smooth transition
+        m_dot_lox = zeros(2,1)
+        m_dot_gox = zeros(2,1)
+        m_dot_oxtank_press = zeros(2,1)
+        p_crit = zeros(2,1)
+        m_dot_ox_crit = zeros(2,1)
+        Q = zeros(2,1)
+        
+        ## Liquid flow
+        m_dot_ox, m_dot_ox_crit(1), p_crit(1) = LN2OMDot(inputs, \
+            inputs.ox.injector_area*inputs.Throttle(time), state.p_oxmanifold, state.T_oxtank, \
+            state.p_cc)
+
+        m_dot_lox(1) = m_dot_ox
+        m_dot_gox(1) = 0
+        m_dot_oxtank_press(1) = 0
+        Q(1) = m_dot_ox/state.N2O_properties.rho_l
+        
+        ## Gas Flow
+        d_inj = sqrt(4/pi*inputs.ox.injector_area*inputs.Throttle(time))
+        [ ~, ~, ~, ~, m_dot_ox, ~ ] = NozzleCalc( d_inj, d_inj, state.T_oxtank, \
+            state.p_oxmanifold, state.gamma_ox_ullage, M_n2o, state.p_cc)
+        
+        p_crit(2) = 0
+        m_dot_ox_crit(2) = 0
+        m_dot_lox(2) = 0
+        m_dot_gox(2) = m_dot_ox*\
+            (state.m_gox)/(state.m_gox + state.m_oxtank_press)
+        m_dot_oxtank_press(2) = m_dot_ox*\
+            (state.m_oxtank_press)/(state.m_gox + state.m_oxtank_press)
+        Q(2) = m_dot_ox*state.V_ox_ullage/(state.m_gox + state.m_oxtank_press)
+        
+        ## Total Flow Rate
+        if state.m_lox > dm_lox_tol:
+            frac_lox = 1
+        else:
+            frac_lox = max(0,state.m_lox/dm_lox_tol)
+        end
+        
+        m_dot_lox = frac_lox*m_dot_lox(1) + (1-frac_lox)*m_dot_lox(2)
+        m_dot_gox = frac_lox*m_dot_gox(1) + (1-frac_lox)*m_dot_gox(2)
+        m_dot_oxtank_press = frac_lox*m_dot_oxtank_press(1) + (1-frac_lox)*m_dot_oxtank_press(2)
+        p_crit = frac_lox*p_crit(1) + (1-frac_lox)*p_crit(2)
+        m_dot_ox_crit = frac_lox*m_dot_ox_crit(1) + (1-frac_lox)*m_dot_ox_crit(2)
+        Q = frac_lox*Q(1) + (1-frac_lox)*Q(2)
+    else: # bruh ur bad if ur chamber pressure is greater than tank press
+        m_dot_lox = 0
+        m_dot_gox = 0
+        m_dot_oxtank_press = 0
+        p_crit = state.p_oxtank
+        m_dot_ox_crit = 0
+        Q = 0
+    """
+
+# def terminal_func(t: float, x: np.ndarray, inputs: Struct):
+#     # Sets the termination of integration. Integration will stop when values go to zero. 
+
+#     state = LiquidStateVector.from_column_vector(x, inputs)
+#     is_terminal = [1, 1]
+#     direction = [0, 0]
+
+#     value = [state.m_lox + state.m_gox, state.m_fuel] # Mass of propellants
+#     return value, is_terminal, direction
+
 
 def find_G():
     raise NotImplementedError

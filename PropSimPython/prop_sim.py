@@ -146,7 +146,7 @@ config = {
     # Expansion Ratio
     "exp_ratio": 3.26,
     # Ambient Temperature
-    "T_amb": 292, # K
+    "T_amb": 300, # K
     # Ambient Pressure
     "p_amb": 9.554e04, # Pa
 }
