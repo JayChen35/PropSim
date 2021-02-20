@@ -1,7 +1,7 @@
 # PropSim in Python 3.6+
 # Project Caelus, Aphlex 1C Engine
 # 09 February, 2021
-# Authors: Jason Chen, Liam West, Anya Mischel, Jack Blair
+# Authors: Jason Chen, Liam West, Anya Mischel, Jack Blair, Cyril Sharma, Caleb Arulandu
 
 """
 Liquid Rocket Engine Performance Simulation Code (PropSim). See README.md for more information.
@@ -10,7 +10,6 @@ This script simulates the behavior and performance of small liquid rocket engine
 use nitrous oxide as their oxidizer. Any fuel type can be modeled. This file acts as the driver,
 with a dictionary named "config" (below) used to set engine parameters and propellant properties.
 """
-
 
 import numpy as np
 import time
@@ -126,7 +125,6 @@ config = {
         "active": False # Are we supercharging (external pressurant tank)?
     },
 
-
     #----------Other Properties-----------
     # Ball valve time to injector area (s)
     "dt_valve_open": 0.01, # sec
@@ -158,12 +156,14 @@ def run_performance():
     """
     # Create a Struct data instance from config
     inputs = Struct(config)
+    inputs.throttle = throttle
     # Get oxidizer properties at the given temperature
     n2o = n2o_properties(inputs.ox.T_tank)
     # Our integration variables are oxidizer mass and liquid oxidizer volume
     Mox = n2o.rho_l*(inputs.ox.liquid_V) + n2o.rho_g*(inputs.ox.tank_V-inputs.ox.liquid_V)
     if inputs.options.output_on:
         print("Initial oxidizer mass: {} kg.".format(Mox))
+
     start = time.perf_counter() # Start timer for integration
 
     time, record = integration(inputs) # Time = time for integration, record = output data
@@ -187,9 +187,33 @@ def run_performance():
     p_exit          = record.p_exit
     p_shock         = record.p_shock
 
-    time_elapsed = start-time.perf_counter()
+    time_elapsed = start-time.perf_counter() # Stop the timer and print elapsed time
     if inputs.options.output_on:
         print("Time elapsed for this timestep: {} sec.".format(time_elapsed))
+
+
+def throttle(inputs: Struct, time: float or list or np.ndarray) -> np.ndarray:
+    """ Injector area function. Characterizes throttle profile based on valve open times. """
+    if type(time) == float:
+        func = np.zeros((1, 1))
+        if time > inputs.dt_valve_open:
+            func[0][0] = 1
+        else:
+            func[0][0] = time/inputs.dt_valve_open
+    else:
+        # Make it so that time is a column vector
+        if len(time.shape == 1):
+            time = np.expand_dims(time, axis=1)
+        if time.shape[0] == 1:
+            time = np.transpose(time)
+        assert time.shape[1] == 1
+        # Same logic as above, but with matrices
+        func = np.zeros((len(time)))
+        for i in range(len(time)):
+            if time[i][0] > inputs.dt_valve_open:
+                func[i][0] = 1
+            else:
+                func[i][0] = time/inputs.dt_valve_open
 
 
 if __name__ == "__main__":
