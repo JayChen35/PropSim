@@ -193,7 +193,11 @@ def run_performance():
 
 
 def throttle(inputs: Struct, time: float or list or np.ndarray) -> np.ndarray:
-    """ Injector area function. Characterizes throttle profile based on valve open times. """
+    """ 
+    Injector area function. Characterizes throttle profile based on valve timings.
+    When timestep (time) < time it takes to open the main propellant valve (dt_valve_open), 
+    CdA is scaled down by a factor. If timestep > dt_valve_open, CdA is simply the nominal CdA.
+    """
     if type(time) == float:
         func = np.zeros((1, 1))
         if time > inputs.dt_valve_open:
