@@ -45,7 +45,7 @@ def n2o_properties(temp: int or float) -> Struct:
     Tcrit = 309.57 # K
     Pcrit = 7251 # kPa
     rhocrit = 452 # kg/m^3
-    #possibly add critical compressibility factor "Z"
+    # Possibly add critical compressibility factor "Z"
     Tr = temp/Tcrit
 
     # Calculate vapor pressure, valid -90 to 36C
@@ -141,31 +141,47 @@ def n2o_properties(temp: int or float) -> Struct:
     properties["mu_g"] = properties["mu_g"]*10**-6 # uN*s/(m^ 2)-> N*s/m^2
 
     props = Struct(properties) # Converts the output properties into standardized Struct type
-
-    # print(props)
-
     return props
 
 
+def get_n2o_Pvap(temp: int or float):
+    """A faster method to get the nitrous vapor pressure based on input temperature."""
+
+    # Range-check temperature
+    if temp < (-90 + 273.15): # If temperature is less that bottom bound
+        temp = -90 + 273.150001  # Temperature is bottom bound for interpolate
+    elif temp > (30 + 273.150001): # If temperature greater than top bound, 
+        temp = 30 + 273.150001 # Temperature equal to top bound for interpolate
+
+    Tcrit = 309.57 # K
+    Pcrit = 7251 # kPa
+    rhocrit = 452 # kg/m^3
+    Tr = temp/Tcrit
+
+    # Calculate vapor pressure, valid -90 to 36C
+    b1 = -6.71893
+    b2 = 1.3596
+    b3 = -1.3779
+    b4 = -4.051
+
+    Pvap = 1000*(np.exp((1/Tr)*(b1*(1-Tr) + b2*(1-Tr)**(3/2) + b3*(1-Tr)**(5/2) + b4*(1-Tr)**5))*Pcrit)
+    return Pvap
+
+
 def n2o_find_T(p_vap: int or float) -> float:
-    # N2O_FindT Estimate temperature that gives the specified vapor pressure.
-    
+    """ Estimate temperature that gives the specified vapor pressure. """
     T_min = -90 + 273.15
     T_max = 30 + 273.15
-    n = 1000
-    T_i = np.linspace(T_min, T_max, n)
-
+    num_pts = 1000
+    T_i = np.linspace(T_min, T_max, num_pts)
     Pvap = np.zeros(T_i.shape)
 
-    for ii in range(0, n):
-        prop = n2o_properties(T_i[ii])
-        Pvap[ii] = prop.Pvap
-        # print(prop.Pvap)
+    for x in range(num_pts):
+        Pvap[x] = get_n2o_Pvap(T_i[x])
 
-    
-    z = InterpolatedUnivariateSpline(Pvap, T_i, k=1) # best-fit line, Pvap along x, temp along y
-
+    z = InterpolatedUnivariateSpline(Pvap, T_i, k=1) # Best-fit line, Pvap along x, temp along y
     return z(p_vap)
+
 
 def two_phase_n2o_flow(t_1: int or float):    
     """
@@ -188,17 +204,15 @@ def two_phase_n2o_flow(t_1: int or float):
            mass_flux.p_down_norm: array of (back pressure / upstream pressure)
            mass_flux.G: array of mass flux at corresponding P_1_norm, P_2_norm
 
-    WARNING: THIS FUNCTION TAKES A VERY LONG TIME
+    NOTE: States are denoted by subscript as follows:
+        1: upstream (stagnation)
+        2: downstream
     """
 
     # Numerical options
-    n = 200 # density of calculation points along each dimension
+    n = 200 # Density of calculation points along each dimension
 
-    # States:
-    #   1: upstream (stagnation)
-    #   2: downstream
-
-    # saturation properties at upstream temperature
+    # Saturation properties at upstream temperature
     n2o_prop_1_sat = n2o_properties(t_1)
 
     # Create array of p_1, p_2
@@ -296,8 +310,5 @@ def two_phase_n2o_flow(t_1: int or float):
     mass_flux["G"] = G_out
 
     return crit_flow, mass_flux
-
-# n2o_properties(10)
-# print(n2o_find_T(10))
 
 two_phase_n2o_flow(300)
