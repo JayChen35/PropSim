@@ -17,12 +17,14 @@ class Struct():
                 else:
                     setattr(self, key, value) # If the value is regular data, set the key, value pair
     
-    def __getitem__(self, val): # Defines the "." operator to access a value in the internal dictionary.
-        return self.__dict__[val]
+    def __getitem__(self, key): # Defines the "." operator to access a value in the internal dictionary.
+        return self.__dict__[key]
 
     def __repr__(self): # __repr__ allows printing of this class to be more readible.
         return "{%s}" % str(", ".join("%s : %s" % (k, repr(v)) for (k, v) in self.__dict__.items()))
-
+    
+    def fieldnames(self):
+        return [key for key in self.__dict__]    
 
 class Gas():
     """
@@ -58,3 +60,4 @@ class Gas():
             "gamma": self.gamma
         }
         return output
+

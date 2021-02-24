@@ -10,7 +10,8 @@ from classes import Struct
 from state_flow import init_liquid_state, LiquidStateVector, lsv_from_column_vec
 from dynamics import n2o_tank_mdot
 from nozzle import nozzle_calc
-
+from liquid import design_liquid
+from masscalc import calc_mass
 
 def integration(inputs: Struct) -> Tuple[float, Struct]:
     """
@@ -131,8 +132,40 @@ def liquid_model(time: float, x: np.ndarray, inputs: Struct):
 
 
 def find_G():
-    raise NotImplementedError
+    pass
 
 
-def find_mass_gradient():
-    raise NotImplementedError
+def find_mass_gradient(constraints, values: np.ndarray, delta, results_prev):
+
+    goal = create_struct(constraints, values)[0]
+    design = create_struct(constraints, values)[1]
+    
+
+    base_inputs = design_liquid(results_prev, goal, design, false)
+    central_value = calc_mass(base_inputs)
+
+    grad = np.zeros((1, len(values)))
+    
+    for j in range(len(values))
+        step = np.zeros((np.ndarray.ndim(values))
+        step[j] = values[j]*delta
+
+        goal = create_struct(constraints, values + step)[0]
+        design = create_struct(constraints, values + step)[1]
+        grad[j] = (calc_mass(design_liquid(base_inputs, goal, design, false)) - central_value)/delta)
+    grad = np.divide(grad,np.linalg.norm(grad))
+    return grad
+
+def create_struct(constraints,values: np.ndarray):
+    goal['total_impulse'] = constraints[1]
+    goal['max_thrust'] = constraints[2]
+    goal['OF'] = constraints[3]
+    goal['min_fuel_dp'] = constraints[4]
+    goal['min_ox_to_dp'] = constraints[5]
+    goal['ox_to_fuel_time'] = values[1]
+    design['ox_ullage'] = constraints[6]
+    design['p_tanks'] = values[2]
+    design['exp_ratio'] = values[3]
+    goal = Struct(goal)
+    design = Struct(design)
+    return goal, design
