@@ -4,6 +4,7 @@
 
 
 import numpy as np
+from scipy.interpolate import InterpolatedUnivariateSpline
 from classes import Struct
 
 
@@ -44,7 +45,7 @@ def n2o_properties(temp: int or float) -> Struct:
     Tcrit = 309.57 # K
     Pcrit = 7251 # kPa
     rhocrit = 452 # kg/m^3
-    #possibly add critical compressibility factor "Z"
+    # Possibly add critical compressibility factor "Z"
     Tr = temp/Tcrit
 
     # Calculate vapor pressure, valid -90 to 36C
@@ -140,28 +141,46 @@ def n2o_properties(temp: int or float) -> Struct:
     properties["mu_g"] = properties["mu_g"]*10**-6 # uN*s/(m^ 2)-> N*s/m^2
 
     props = Struct(properties) # Converts the output properties into standardized Struct type
-
     return props
 
 
+def get_n2o_Pvap(temp: int or float):
+    """A faster method to get the nitrous vapor pressure based on input temperature."""
+
+    # Range-check temperature
+    if temp < (-90 + 273.15): # If temperature is less that bottom bound
+        temp = -90 + 273.150001  # Temperature is bottom bound for interpolate
+    elif temp > (30 + 273.150001): # If temperature greater than top bound, 
+        temp = 30 + 273.150001 # Temperature equal to top bound for interpolate
+
+    Tcrit = 309.57 # K
+    Pcrit = 7251 # kPa
+    rhocrit = 452 # kg/m^3
+    Tr = temp/Tcrit
+
+    # Calculate vapor pressure, valid -90 to 36C
+    b1 = -6.71893
+    b2 = 1.3596
+    b3 = -1.3779
+    b4 = -4.051
+
+    Pvap = 1000*(np.exp((1/Tr)*(b1*(1-Tr) + b2*(1-Tr)**(3/2) + b3*(1-Tr)**(5/2) + b4*(1-Tr)**5))*Pcrit)
+    return Pvap
+
+
 def n2o_find_T(p_vap: int or float) -> float:
-    # Estimate temperature that gives the specified vapor pressure.
-    # global Pvap # WHAT THE HECC IS THIS GLOBAL VARIABLE GET DIS OUTTA HERE
-    
+    """ Estimate temperature that gives the specified vapor pressure. """
     T_min = -90 + 273.15
     T_max = 30 + 273.15
-    n = 1000
-    T_i = np.linspace(T_min, T_max, n)
-    
-    if Pvap == None:
-        Pvap = np.zeros(np.array(T_i).size())
+    num_pts = 1000
+    T_i = np.linspace(T_min, T_max, num_pts)
+    Pvap = np.zeros(T_i.shape)
 
-        for ii in range(0, n):
-            prop = n2o_properties(T_i[ii])
-            Pvap[ii] = prop.Pvap
+    for x in range(num_pts):
+        Pvap[x] = get_n2o_Pvap(T_i[x])
 
-    z = np.polyfit(Pvap, T_i, 1)
-    return np.polyval(z, p_vap)
+    z = InterpolatedUnivariateSpline(Pvap, T_i, k=1) # Best-fit line, Pvap along x, temp along y
+    return z(p_vap)
 
 
 def two_phase_n2o_flow(t_1: int or float):    
@@ -184,16 +203,16 @@ def two_phase_n2o_flow(t_1: int or float):
                pressure)
            mass_flux.p_down_norm: array of (back pressure / upstream pressure)
            mass_flux.G: array of mass flux at corresponding P_1_norm, P_2_norm
+
+    NOTE: States are denoted by subscript as follows:
+        1: upstream (stagnation)
+        2: downstream
     """
 
     # Numerical options
-    n = 200 # density of calculation points along each dimension
+    n = 200 # Density of calculation points along each dimension
 
-    # States:
-    #   1: upstream (stagnation)
-    #   2: downstream
-
-    # saturation properties at upstream temperature
+    # Saturation properties at upstream temperature
     n2o_prop_1_sat = n2o_properties(t_1)
 
     # Create array of p_1, p_2
@@ -214,18 +233,25 @@ def two_phase_n2o_flow(t_1: int or float):
 
     # Calculate downstream temperature
     T_2 = n2o_find_T(P_2)
-    n2o_prop_2 = n2o_properties(T_2)
+    # n2o_prop_2 = # [n2o_properties(j) for j in i for i in T_2]
+    a = T_2.shape[0] 
+    b = T_2.shape[1]
+    n2o_prop_2 = [[0 for b in range(b)] for i in range(a)]
+
+    for x in range(a):
+        for y in range(b):
+            n2o_prop_2[x][y] = n2o_properties(T_2[x, y])
 
     # Calculate gas density
-    rho_2_g = n2o_prop_2.rho_g
-    rho_2_l = n2o_prop_1_sat.rho_l*np.ones(np.array(P_2).shape())
+    rho_2_g = np.array([[j.rho_g for j in i] for i in n2o_prop_2])
+    rho_2_l = n2o_prop_1_sat.rho_l * np.ones(np.array(P_2).shape)
 
-    enthalpy_2_g = n2o_prop_2.h_g
-    enthalpy_2_l = n2o_prop_2.h_l
+    enthalpy_2_g = np.array([[j.h_g for j in i] for i in n2o_prop_2])
+    enthalpy_2_l = np.array([[j.h_l for j in i] for i in n2o_prop_2])
 
-    entropy_1_l = n2o_prop_1_sat.s_l*np.ones(np.array(P_2).shape())
-    entropy_2_l = n2o_prop_2.s_l
-    entropy_2_g = n2o_prop_2.s_g
+    entropy_1_l = n2o_prop_1_sat.s_l * np.ones(np.array(P_2).shape)
+    entropy_2_l = np.array([[j.s_l for j in i] for i in n2o_prop_2])
+    entropy_2_g = np.array([[j.s_g for j in i] for i in n2o_prop_2])
 
     # entropy difference: liquid downstream - liquid upstream
     entropy_ld_lu = entropy_2_l - entropy_1_l
@@ -236,32 +262,38 @@ def two_phase_n2o_flow(t_1: int or float):
     # massfrac: mass fraction of vapor
     massfrac = np.divide(entropy_ld_lu, entropy_ld_gd)
 
-    if massfrac < 0:
-        rho_2_l = n2o_prop_1_sat.rho_l
-        enthalpy_2_l = n2o_prop_1_sat.h_l + P_2 - n2o_prop_1_sat.Pvap / n2o_prop_1_sat.rho_l
-        massfrac = 0
+    a = massfrac.shape[0] 
+    b = massfrac.shape[1]
+    for x in range(a):
+        for y in range(b):
+            if massfrac[x, y] < 0:
+                rho_2_l = n2o_prop_1_sat.rho_l
+                enthalpy_2_l = n2o_prop_1_sat.h_l + P_2 - n2o_prop_1_sat.Pvap / n2o_prop_1_sat.rho_l
+                massfrac[x, y] = 0
 
     # downstream inverse density
     rho_2_inv = np.multiply(massfrac, (1./rho_2_g) + np.multiply((1-massfrac), (1./rho_2_l)))
 
     # downstream equivalent density
-    rho_2_equiv = np.ones(np.array(rho_2_inv).size() / rho_2_inv)
+    rho_2_equiv = np.ones(rho_2_inv.shape) / rho_2_inv
 
-    enthalpy_2 = massfrac * enthalpy_2_g + (1-massfrac) * enthalpy_2_l
+    enthalpy_2 = massfrac * enthalpy_2_g + (np.ones(massfrac.shape) - massfrac) * enthalpy_2_l
 
     # Homogeneous Equilibrium Model
-    G = rho_2_equiv * np.sqrt(2.*(enthalpy_1 - enthalpy_2))
+    G = rho_2_equiv * np.sqrt(2 * (enthalpy_1 - enthalpy_2))
 
     # G_crit for each 
-    G_crit, i_crit = np.amax(G, axis=0) 
-    P_2_crit = np.zeros(1, np.array(P_2).size()[2])
-    for ii in range(1, np.array(P_2).size()[2]):
-        P_2_crit[ii] = P_2(i_crit[ii], ii)
+    G_crit = np.amax(G, axis=0) 
+    i_crit = np.argmax(G, axis=0)
+
+    P_2_crit = np.zeros((1, P_2.shape[1]))
+    for ii in range(0, P_2.shape[1]):
+        P_2_crit[ii] = P_2[i_crit[ii], ii]
 
     # Create downstream pressure vs. oxidizer mass flux profile
-    G_out = np.matlib.repmat(G_crit, [np.array(P_2).size()[1], 1])
+    G_out = np.matlib.repmat(G_crit, [P_2.shape[0], 1])
     # P_2_crit expanded to size of P_2
-    P_2_crit_exp = np.matlib.repmat(P_2_crit, [np.array(P_2).size()[1], 1])
+    P_2_crit_exp = np.matlib.repmat(P_2_crit, [P_2.shape[0], 1])
     G_out = G if P_2 > P_2_crit_exp else None
 
     # Calculate incompressible mass flux
@@ -278,3 +310,5 @@ def two_phase_n2o_flow(t_1: int or float):
     mass_flux["G"] = G_out
 
     return crit_flow, mass_flux
+
+two_phase_n2o_flow(300)
