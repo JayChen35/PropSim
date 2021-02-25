@@ -10,8 +10,9 @@ from classes import Struct
 from state_flow import init_liquid_state, LiquidStateVector, lsv_from_column_vec
 from dynamics import n2o_tank_mdot
 from nozzle import nozzle_calc
-from liquid import design_liquid
+from design_liquid import design_liquid
 from masscalc import calc_mass
+
 
 def integration(inputs: Struct) -> Tuple[float, Struct]:
     """
@@ -127,36 +128,37 @@ def liquid_model(time: float, x: np.ndarray, inputs: Struct):
     state_dot = LiquidStateVector()
 
     # Calculate injector mass flow rate
+    # TODO: This is where Python conversion stopped (02/25/2021); see n2o.py for n2o_tank_mdot() work
     output = n2o_tank_mdot(inputs, state, time)
     m_dot_lox, m_dot_gox, m_dot_oxtank_press, T_dot_drain_ox, p_crit, m_dot_ox_crit = output
 
 
 def find_G():
-    pass
+    raise NotImplementedError
 
 
+# TODO: The following functions (find_mass_gradient and create_struct) are UNTESTED
 def find_mass_gradient(constraints, values: np.ndarray, delta, results_prev):
-
     goal = create_struct(constraints, values)[0]
     design = create_struct(constraints, values)[1]
-    
 
-    base_inputs = design_liquid(results_prev, goal, design, false)
+    base_inputs = design_liquid(results_prev, goal, design, False)
     central_value = calc_mass(base_inputs)
 
     grad = np.zeros((1, len(values)))
     
-    for j in range(len(values))
-        step = np.zeros((np.ndarray.ndim(values))
+    for j in range(len(values)):
+        step = np.zeros(np.ndarray.ndim(values))
         step[j] = values[j]*delta
 
         goal = create_struct(constraints, values + step)[0]
         design = create_struct(constraints, values + step)[1]
-        grad[j] = (calc_mass(design_liquid(base_inputs, goal, design, false)) - central_value)/delta)
+        grad[j] = (calc_mass(design_liquid(base_inputs, goal, design, False)) - central_value)/delta
     grad = np.divide(grad,np.linalg.norm(grad))
     return grad
 
-def create_struct(constraints,values: np.ndarray):
+
+def create_struct(constraints, values: np.ndarray):
     goal['total_impulse'] = constraints[1]
     goal['max_thrust'] = constraints[2]
     goal['OF'] = constraints[3]

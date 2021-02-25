@@ -24,7 +24,8 @@ class Struct():
         return "{%s}" % str(", ".join("%s : %s" % (k, repr(v)) for (k, v) in self.__dict__.items()))
     
     def fieldnames(self):
-        return [key for key in self.__dict__]    
+        return [key for key in self.__dict__]  
+
 
 class Gas():
     """

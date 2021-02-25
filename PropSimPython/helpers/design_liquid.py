@@ -1,8 +1,9 @@
-#Liquid Design for PropsimPython
-#Project Caelus, Aphlex 1C Engine
-#Tanmay Neema, 23 February, 2021
+# Liquid Design for PropSimPython
+# Project Caelus, Aphlex 1C Engine
+# Tanmay Neema, 23 February, 2021
 
-"""DesignLiquid Generates a liquid engine design matching the performance
+"""
+Generates a liquid engine design matching the performance
 specifications and constraints provided.
    Inputs:
        - goal.max_thrust: initial thrust required
@@ -20,13 +21,13 @@ specifications and constraints provided.
        - inputs: engine design parameters (see PerformanceCode.m)
 """
 
-
 import numpy as np
 import matplotlib.pyplot as plt
 from classes import Struct
 from n2o import n2o_find_T
 
 
+# TODO: The following function (design_liquid) is UNTESTED
 def design_liquid(initial_inputs: Struct, goal: Struct, design: Struct, output_on: bool):
     parameter_labels = ['Thrust','OF','Total Impulse','Min. Fuel Pressure Drop', 'Min. Ox. Pressure Drop','Ox. to Fuel Drain Time Ratio']
     paramater_field_names = goal.fieldnames()
@@ -44,18 +45,10 @@ def design_liquid(initial_inputs: Struct, goal: Struct, design: Struct, output_o
 
     max_iter = 100
     param_tol = 0.005
-#Enforce design parameters
-
+    
+    # Enforce design parameters
     inputs = initial_inputs
-    inputs.ox.T_tank = n2o_Find_T(design.p_tanks)
+    inputs.ox.T_tank = n2o_find_T(design.p_tanks)
     inputs.ox.V_tank = inputs.ox.V_l/(1-design.ox_ullage)
     inputs.fuel_pressurant.set_pressure = design.p_tanks
     inputs.exp_ratio = design.exp_ratio
-
-    if output_on:
-        pass
-    #matplot tingz resid plot
-
-    
-
-

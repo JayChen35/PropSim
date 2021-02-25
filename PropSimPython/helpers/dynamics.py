@@ -71,7 +71,7 @@ def n2o_tank_mdot(inputs: Struct, state: LiquidStateVector, time: float) -> tupl
             (state.m_oxtank_press)/(state.m_gox + state.m_oxtank_press)
         Q[1] = m_dot_ox*state.V_ox_ullage/(state.m_gox + state.m_oxtank_press)
         
-        ## Total Flow Rate
+        # Total Flow Rate
         if state.m_lox > dm_lox_tol:
             frac_lox = 1
         else:

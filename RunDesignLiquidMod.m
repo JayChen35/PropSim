@@ -16,6 +16,24 @@ lbm_to_kg = 0.453592; % 1 lbm in kg
 atm_to_Pa = 101325; % 1 atm in Pa
 L_to_m3 = 1e-3; % 1 L in m^3
 
+%% Converged results on 02/25/2021
+% Converged Results:
+% Nozzle Throat Diameter: 2.992 cm
+% Fuel Injector CdA: 20.3 mm^2
+% Oxidizer Injector CdA: 52.7 mm^2
+% Fuel Tank Size: 5.73 L tank, 1.98 L liquid
+% Oxidizer Tank Size: 7.3 L tank, 6.57 L liquid
+% Fuel Tank Initial Pressure: 850 psi
+% Oxidizer Tank Initial Temperature: 300 K
+% Initial oxidizer mass: 4.93 kg
+% Elapsed time is 3.548574 seconds.
+% Pressurant Mass: 0.264 kg
+% Impulse: 8.72 kN*s		
+% Oxidizer Mass Spent: 4.18 kg		Oxidizer Mass Remaining: 0.75 kg
+% Fuel Mass Spent: 1.56 kg		Fuel Mass Remaining: 0.00 kg
+%  OF ratio: 2.69 
+% Isp: 155.1 s		C*: 1096 m/s		C_f: 1.39
+
 %% Goal/Design Parameters
 goal.max_thrust = 3000; % 400*lbf_to_N;
 goal.OF = 4.0; % 8.0;
