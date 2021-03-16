@@ -217,7 +217,6 @@ state_dot.m_oxtank_press = -m_dot_oxtank_press;
 state_dot.T_oxtank = T_dot_drain_ox + T_dot_vap; 
 
 state_dot.m_fuel = -m_dot_f;
-% disp(state_dot.m_fuel);
 state_dot.T_fueltank_press = T_dot_drain_f; 
 
 m_dot_ox = m_dot_lox + m_dot_gox;
@@ -612,14 +611,6 @@ else
     G_crit = 0;
     p_down_crit = 0;
 end
-% Find the effective CdA throughout the system
-% Cv_mpv = 0.7; % MPV value of the main propellant valve
-% CdA_mpv = Cv_mpv*7.598e-7/sqrt(2/1000);  % 1000 kg/m^3, density of water
-% injector_area = inputs.ox.Cd_injector*A_inj;
-% CdA_eff = 1/sqrt((1/(CdA_mpv^2))+(1/(injector_area^2)));
-
-% m_dot_ox = CdA_eff*G; % inputs.ox.Cd_injector*A_inj*G;
-% m_dot_crit = CdA_eff*G_crit;
 m_dot_ox = inputs.ox.Cd_injector*A_inj*G;
 m_dot_crit = inputs.ox.Cd_injector*A_inj*G_crit;
 p_crit = p_down_crit;
@@ -753,20 +744,12 @@ function [m_dot_f, T_dot_drain] = FuelTankMDot(inputs, state, time)
 %       - m_dot_f: mass flow rate out of tank of liquid fuel
 %       - T_dot_drain: fuel tank temperature change from draining
 
-% Find the effective CdA throughout the system
-Cv_mpv = 0.7; % MPV value of the main propellant valve
-CdA_mpv = Cv_mpv*7.598e-7/sqrt(2/1000);  % 1000 kg/m^3, density of water
-% https://www.wolframalpha.com/input/?i=1+gpm%2F%281+psi%29%5E0.5*sqrt%281+kg%2Fm%5E3%29
-% GPM/psi^0.5 to m^2 conversion factor is 7.598e-07
-% CdA_mpv is in units of square meters
-injector_area = inputs.fuel.Cd_injector*inputs.fuel.injector_area*inputs.Throttle(time);
-CdA_eff = 1/sqrt((1/(CdA_mpv^2))+(1/(injector_area^2)));
-
 % If tank pressure is greater than combustion chamber pressure
+injector_area = inputs.fuel.Cd_injector*inputs.fuel.injector_area*inputs.Throttle(time);
 if (state.p_fueltank > state.p_cc)&&...
         (injector_area>0)
     G = sqrt(2*(state.p_fueltank-state.p_cc)*inputs.fuel.rho);
-    m_dot_f = CdA_eff*G; % m_dot_f = injector_area*G;
+    m_dot_f = injector_area*G;
 else
     m_dot_f = 0;
 end
