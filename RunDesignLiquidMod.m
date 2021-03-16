@@ -167,4 +167,4 @@ initial_inputs.comb_data = initial_inputs.comb_data.CombData;
 
 
 %% Run Code
-DesignLiquid(initial_inputs, goal, design, true);
+DesignLiquid(initial_inputs, goal, design, false);

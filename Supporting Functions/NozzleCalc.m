@@ -35,6 +35,9 @@ if p_back > FindChokedPCrit(gamma, p0)
     ischoked = 0;
     p_exit = p_back;
     p_rat = p_back/p0;
+    if any(gamma < 1)
+        disp(gamma);
+    end
     [M_e,T_rat,~,rho_rat,~] = flowisentropic(gamma, p_rat, 'pres');
     T = T_rat*T0;
     a = sqrt(gamma*R_spec*T);
